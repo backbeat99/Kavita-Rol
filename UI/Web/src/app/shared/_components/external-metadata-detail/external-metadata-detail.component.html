@@ -13,5 +13,21 @@
         [label]="t('isbn-label')"
         [value]="isbn() | defaultValue:t('not-set-label')" />
     </div>
+    @if (showDriveThruRpg()) {
+      <div class="col-auto mb-3">
+        <app-label-card
+          [label]="t('drivethrurpg-id-label')"
+          [value]="driveThruRpgId()?.toString() ?? t('drivethrurpg-not-linked')"
+          [linkUrl]="driveThruRpgId() ? 'https://www.drivethrurpg.com/product/' + driveThruRpgId() : undefined" />
+      </div>
+    }
+    @if (showRpgGeek()) {
+      <div class="col-auto mb-3">
+        <app-label-card
+          [label]="t('rpggeek-id-label')"
+          [value]="rpgGeekId()?.toString() ?? t('rpggeek-not-linked')"
+          [linkUrl]="rpgGeekId() ? 'https://rpggeek.com/rpgitem/' + rpgGeekId() : undefined" />
+      </div>
+    }
   </div>
 </ng-container>

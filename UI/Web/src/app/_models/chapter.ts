@@ -74,6 +74,7 @@ export interface Chapter extends IHasCast, IHasReadingTime, IHasCover, IHasProgr
   comicVineId: string | null;
   mangaBakaId: number;
   cbrId: number;
+  driveThruRpgId: number | null;
 
   genres: Array<Genre>;
   tags: Array<Tag>;

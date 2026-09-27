@@ -105,4 +105,5 @@ public sealed record UpdateChapterDto : IUpdateExternalMetadataIds
     public string? ComicVineId { get; set; }
     public int? MangaBakaId { get; set; }
     public int? CbrId { get; set; }
+    public int? DriveThruRpgId { get; set; }
 }

@@ -670,6 +670,32 @@ public class ParseScannedFilesTests: AbstractDbTest
         Assert.Single(scannedSeries.Values.First().DistinctBy(x => x.Series));
     }
 
+    [Theory]
+    [InlineData(LibraryType.Rpg, 1)]
+    [InlineData(LibraryType.Book, 2)]
+    public void TrackSeriesAcrossScanResults_OnlyRpgMergesPdfAndEpub(LibraryType libraryType, int expectedSeries)
+    {
+        var scanResults = new List<ScanResult>
+        {
+            new()
+            {
+                ParserInfos =
+                [
+                    new ParserInfo { Series = "Asher's Ridge", Volumes = "Interactive", Format = MangaFormat.Pdf },
+                    new ParserInfo { Series = "Asher's Ridge", Volumes = "Interactive", Format = MangaFormat.Epub }
+                ]
+            }
+        };
+        ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries = [];
+        var parser = new ParseScannedFiles(Substitute.For<ILogger<ParseScannedFiles>>(), Substitute.For<IDirectoryService>(),
+            Substitute.For<IReadingItemService>(), Substitute.For<IEventHub>(), Substitute.For<IMediaErrorService>());
+
+        parser.TrackSeriesAcrossScanResults(scanResults, scannedSeries, libraryType);
+
+        Assert.Equal(expectedSeries, scannedSeries.Count);
+        Assert.Equal(2, scannedSeries.Values.Sum(infos => infos.Count));
+    }
+
     #region ParseFiles Concurrency
 
     /// <summary>

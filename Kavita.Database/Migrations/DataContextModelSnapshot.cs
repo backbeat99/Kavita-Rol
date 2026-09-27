@@ -200,6 +200,9 @@ namespace Kavita.Database.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("DriveThruRpgId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("EditorLocked")
                         .HasColumnType("INTEGER");
 
@@ -744,10 +747,16 @@ namespace Kavita.Database.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValue("");
 
+                    b.Property<bool>("EnableDriveThruRpgMetadata")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("EnableMetadata")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("EnableRpgGeekMetadata")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("FolderWatching")
                         .HasColumnType("INTEGER");
@@ -3665,6 +3674,15 @@ namespace Kavita.Database.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("DriveThruRpgId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("DriveThruRpgLastCheckedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DriveThruRpgMatchStatus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("HardcoverId")
                         .HasColumnType("INTEGER");
 
@@ -3672,6 +3690,12 @@ namespace Kavita.Database.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
                         .HasDefaultValue("[]");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("LanguageLocked")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
@@ -3706,6 +3730,9 @@ namespace Kavita.Database.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("NameLocked")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Number")
                         .HasColumnType("INTEGER");
 
@@ -3715,10 +3742,34 @@ namespace Kavita.Database.Migrations
                     b.Property<string>("PrimaryColor")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ReleaseDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ReleaseDateLocked")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("RpgGeekId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("RpgGeekLastCheckedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RpgGeekMatchStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RpgMaterialType")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("SecondaryColor")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("SummaryLocked")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("WordCount")

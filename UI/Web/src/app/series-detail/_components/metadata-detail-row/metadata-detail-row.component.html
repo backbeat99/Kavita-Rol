@@ -22,9 +22,11 @@
       <app-age-rating-image [rating]="ageRating()" />
     </span>
 
-    <span class="me-2">
-       <app-series-format [format]="mangaFormatValue" [useTitle]="false" />
-    </span>
+    @if (libraryTypeValue !== LibraryType.Rpg) {
+      <span class="me-2">
+        <app-series-format [format]="mangaFormatValue" [useTitle]="false" />
+      </span>
+    }
 
 
     @if ((libraryTypeValue === LibraryType.Book || libraryTypeValue === LibraryType.LightNovel) && mangaFormatValue !== MangaFormat.PDF) {

@@ -136,6 +136,7 @@ public class WordCountAnalyzerService(
     private async Task ProcessSeries(Series series, bool forceUpdate = false, bool useFileName = true)
     {
         var isEpub = series.Format == MangaFormat.Epub;
+        var isRpg = series.Library?.Type == LibraryType.Rpg;
         var existingWordCount = series.WordCount;
         series.WordCount = 0;
         foreach (var volume in series.Volumes)
@@ -154,7 +155,7 @@ public class WordCountAnalyzerService(
                     continue;
                 }
 
-                if (series.Format == MangaFormat.Epub)
+                if ((isRpg && firstFile.Format == MangaFormat.Epub) || (!isRpg && series.Format == MangaFormat.Epub))
                 {
                     long sum = 0;
                     var fileCounter = 1;
@@ -199,7 +200,8 @@ public class WordCountAnalyzerService(
                     volume.WordCount += sum;
                 }
 
-                var est = ReaderService.GetTimeEstimate(chapter.WordCount, chapter.Pages, isEpub);
+                var est = ReaderService.GetTimeEstimate(chapter.WordCount, chapter.Pages,
+                    isRpg ? firstFile.Format == MangaFormat.Epub : isEpub);
                 chapter.MinHoursToRead = est.MinHours;
                 chapter.MaxHoursToRead = est.MaxHours;
                 chapter.AvgHoursToRead = est.AvgHours;
@@ -211,7 +213,13 @@ public class WordCountAnalyzerService(
                 unitOfWork.ChapterRepository.Update(chapter);
             }
 
-            var volumeEst = ReaderService.GetTimeEstimate(volume.WordCount, volume.Pages, isEpub);
+            if (isRpg)
+            {
+                volume.WordCount = volume.Chapters.Select(chapter => chapter.WordCount).DefaultIfEmpty(0).Max();
+            }
+
+            var volumeEst = ReaderService.GetTimeEstimate(volume.WordCount, volume.Pages,
+                isEpub || (isRpg && volume.WordCount > 0));
             volume.MinHoursToRead = volumeEst.MinHours;
             volume.MaxHoursToRead = volumeEst.MaxHours;
             volume.AvgHoursToRead = volumeEst.AvgHours;
@@ -219,8 +227,14 @@ public class WordCountAnalyzerService(
 
         }
 
+        if (isRpg)
+        {
+            series.WordCount = series.Volumes.Sum(volume => volume.WordCount);
+        }
+
         if (series.WordCount == 0 && existingWordCount != 0) series.WordCount = existingWordCount; // Restore original word count if the file hasn't changed
-        var seriesEstimate = ReaderService.GetTimeEstimate(series.WordCount, series.Pages, isEpub);
+        var seriesEstimate = ReaderService.GetTimeEstimate(series.WordCount, series.Pages,
+            isEpub || (isRpg && series.WordCount > 0));
         series.MinHoursToRead = seriesEstimate.MinHours;
         series.MaxHoursToRead = seriesEstimate.MaxHours;
         series.AvgHoursToRead = seriesEstimate.AvgHours;

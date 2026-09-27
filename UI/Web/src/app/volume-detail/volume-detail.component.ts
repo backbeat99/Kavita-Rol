@@ -91,6 +91,9 @@ import {ChapterCardComponent} from "../cards/chapter-card/chapter-card.component
 import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
 import {EntityTitleService} from "../_services/entity-title.service";
+import {RpgMaterialType, RPG_RESOURCE_TYPES} from "../_models/library/rpg-material-type";
+import {DriveThruRpgMetadataComponent} from "../_single-module/drive-thru-rpg-metadata/drive-thru-rpg-metadata.component";
+import {RpgGeekMetadataComponent} from "../_single-module/rpg-geek-metadata/rpg-geek-metadata.component";
 
 interface VolumeCast extends IHasCast {
   characterLocked: boolean;
@@ -158,13 +161,18 @@ interface VolumeCast extends IHasCast {
     ReadingProgressStatusPipePipe,
     ReadingProgressIconPipePipe,
     ChapterCardComponent,
-    TabTitlePipe
+    TabTitlePipe,
+    DriveThruRpgMetadataComponent,
+    RpgGeekMetadataComponent
   ],
   templateUrl: './volume-detail.component.html',
   styleUrl: './volume-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VolumeDetailComponent implements OnInit {
+  protected readonly LibraryType = LibraryType;
+  protected readonly RpgMaterialType = RpgMaterialType;
+  isRpgResource = computed(() => RPG_RESOURCE_TYPES.includes(this.volume()?.rpgMaterialType ?? RpgMaterialType.Unclassified));
   protected readonly DownloadEntityType = DownloadEntityType;
   private readonly document = inject(DOCUMENT);
   private readonly route = inject(ActivatedRoute);
@@ -276,6 +284,9 @@ export class VolumeDetailComponent implements OnInit {
       case LibraryType.LightNovel:
         chapterLocaleKey = 'common.book-num-shorthand';
         break;
+      case LibraryType.Rpg:
+        chapterLocaleKey = 'entity-title.version-num';
+        break;
       case LibraryType.Manga:
       case LibraryType.Images:
         chapterLocaleKey = 'common.chapter-num-shorthand';
@@ -298,6 +309,7 @@ export class VolumeDetailComponent implements OnInit {
       addedAt: v.createdUtc,
       updatedAt: v.lastModifiedUtc,
       kavitaId: v.id,
+      language: this.libraryType() === LibraryType.Rpg ? v.language || null : null,
     };
   });
 
@@ -444,6 +456,12 @@ export class VolumeDetailComponent implements OnInit {
 
   readVolume(incognitoMode: boolean = false) {
     if (!this.volume) return;
+
+    if (this.libraryType() === LibraryType.Rpg) {
+      const version = this.volume().chapters[0];
+      if (version) this.readerService.readChapter(this.libraryId(), this.seriesId(), version, incognitoMode || this.isRpgResource());
+      return;
+    }
 
     this.readerService.readVolume(this.libraryId(), this.seriesId(), this.volume(), incognitoMode);
   }

@@ -82,10 +82,24 @@ export class ActionFactoryService {
   }
 
   getVolumeActions(seriesId: number, libraryId: number, libraryType: LibraryType, shouldRenderFunc: ActionShouldRenderFunc<Volume> = this.basicReadRender) {
+    const renderFunc = libraryType === LibraryType.Rpg
+      ? (action: ActionItem<Volume>, entity: Volume, user: User) => {
+          if ([Action.IncognitoRead, Action.MarkAsRead, Action.MarkAsReadWithSession,
+            Action.MarkAsUnread, Action.Download, Action.SendTo].includes(action.action)) return false;
+          return shouldRenderFunc(action, entity, user);
+        }
+      : shouldRenderFunc;
+
+    const actions = libraryType === LibraryType.Rpg
+      ? this.volumeActions.filter(action => action.action !== Action.IncognitoRead
+          && action.action !== Action.MarkAsUnread
+          && !(action.action === Action.Submenu && ['mark-as-read', 'send-to'].includes(action.title)))
+      : this.volumeActions;
+
     return this.applyCallbackToList(
-      this.volumeActions,
+      actions,
       (action, entity) => this.actionService.handleVolumeAction(action, entity, seriesId, libraryId, libraryType),
-      shouldRenderFunc
+      renderFunc
     );
   }
 

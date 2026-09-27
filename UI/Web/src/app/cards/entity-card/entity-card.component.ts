@@ -254,6 +254,14 @@ export class EntityCardComponent<T> implements OnInit {
     return downloadFunc ? downloadFunc(this.data()) : null;
   });
 
+  onTitleClick(event: MouseEvent) {
+    const titleClick = this.config().titleClickFunc;
+    if (!titleClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+    titleClick(this.data(), this.entity());
+  }
+
   private prevTouchTime = 0;
   private prevOffset = 0;
   private selectionInProgress = false;

@@ -18,6 +18,71 @@
 
     <!-- Info Tab -->
     <ng-template [appEditTab]="Tabs.Info">
+      @if (libraryType === LibraryType.Rpg && accountService.hasAdminRole()) {
+        <div class="row">
+          <div class="col-md-9 col-sm-12 mb-3">
+            <app-setting-item [title]="t('title-label')" [showEdit]="false" [toggleOnViewClick]="false">
+              <ng-template #view>
+                <div class="input-group" [ngClass]="{'lock-active': editForm.get('nameLocked')?.value}">
+                  <input class="form-control" formControlName="name" type="text" [attr.aria-label]="t('title-label')">
+                  <span class="input-group-text">
+                    <input type="checkbox" class="form-check-input mt-0" formControlName="nameLocked" [attr.aria-label]="t('locked-label')">
+                  </span>
+                </div>
+              </ng-template>
+            </app-setting-item>
+          </div>
+          <div class="col-md-3 col-sm-12 mb-3">
+            <app-setting-item [title]="t('language-label')" [showEdit]="false" [toggleOnViewClick]="false">
+              <ng-template #view>
+                <div class="input-group" [ngClass]="{'lock-active': editForm.get('languageLocked')?.value}">
+                  <input class="form-control" formControlName="language" type="text" [attr.aria-label]="t('language-label')">
+                  <span class="input-group-text">
+                    <input type="checkbox" class="form-check-input mt-0" formControlName="languageLocked" [attr.aria-label]="t('locked-label')">
+                  </span>
+                </div>
+              </ng-template>
+            </app-setting-item>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <app-setting-item [title]="t('summary-label')" [showEdit]="false" [toggleOnViewClick]="false">
+            <ng-template #view>
+              <div class="input-group" [ngClass]="{'lock-active': editForm.get('summaryLocked')?.value}">
+                <textarea class="form-control" formControlName="summary" rows="3" [attr.aria-label]="t('summary-label')"></textarea>
+                <span class="input-group-text">
+                  <input type="checkbox" class="form-check-input mt-0" formControlName="summaryLocked" [attr.aria-label]="t('locked-label')">
+                </span>
+              </div>
+            </ng-template>
+          </app-setting-item>
+        </div>
+
+        <div class="mb-3">
+          <app-setting-item [title]="t('release-date-label')" [showEdit]="false" [toggleOnViewClick]="false">
+            <ng-template #view>
+              <div class="input-group" [ngClass]="{'lock-active': editForm.get('releaseDateLocked')?.value}">
+                <input class="form-control" formControlName="releaseDate" type="date" [attr.aria-label]="t('release-date-label')">
+                <span class="input-group-text">
+                  <input type="checkbox" class="form-check-input mt-0" formControlName="releaseDateLocked" [attr.aria-label]="t('locked-label')">
+                </span>
+              </div>
+            </ng-template>
+          </app-setting-item>
+        </div>
+      }
+
+      @if (libraryType === LibraryType.Rpg && accountService.hasAdminRole()) {
+        <div class="mb-3">
+          <label class="form-label" for="rpg-material-type">{{t('rpg-material-type-label')}}</label>
+          <select id="rpg-material-type" class="form-select" formControlName="rpgMaterialType">
+            @for (type of rpgMaterialOptions; track type) {
+              <option [ngValue]="type">{{t('material-type-' + type)}}</option>
+            }
+          </select>
+        </div>
+      }
       <div class="row">
         <div class="col-lg-6 col-md-12 pe-2">
           <div class="mb-3">
@@ -96,9 +161,27 @@
     </ng-template>
 
     <!--External Metadata Ids-->
-    @if (accountService.hasAdminRole()) {
+    @if (accountService.hasAdminRole() && (libraryType !== LibraryType.Rpg || enableDriveThruRpgMetadata())) {
       <ng-template [appEditTab]="Tabs.ExternalMetadataIds">
-        <app-edit-external-metadata-form [form]="editForm" [entity]="volume"/>
+        @if (libraryType !== LibraryType.Rpg) {
+          <app-edit-external-metadata-form [form]="editForm" [entity]="volume"/>
+        }
+        @if (libraryType === LibraryType.Rpg && enableDriveThruRpgMetadata() && editForm.get('driveThruRpgId'); as formControl) {
+          <div class="row align-items-end mt-3">
+            <div class="col-md-8 col-sm-12 mb-3">
+              <app-setting-item [title]="t('drivethrurpg-id-label')" [showEdit]="false" [toggleOnViewClick]="false" [control]="formControl">
+                <ng-template #view>
+                  <input class="form-control" formControlName="driveThruRpgId" type="number" min="1" step="1">
+                </ng-template>
+              </app-setting-item>
+            </div>
+            <div class="col-md-4 col-sm-12 mb-3">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="refreshDriveThruRpgMetadata()">
+                {{t('drivethrurpg-refresh-label')}}
+              </button>
+            </div>
+          </div>
+        }
       </ng-template>
     }
 

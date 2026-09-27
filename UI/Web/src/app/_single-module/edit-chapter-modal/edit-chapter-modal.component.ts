@@ -29,7 +29,7 @@ import {ActionService} from "../../_services/action.service";
 import {DownloadService} from '../../shared/_services/download.service';
 import {SettingItemComponent} from "../../settings/_components/setting-item/setting-item.component";
 import {TypeaheadComponent} from "../../typeahead/_components/typeahead.component";
-import {concat} from "rxjs";
+import {concat, switchMap} from "rxjs";
 import {EntityTitleComponent} from "../../cards/entity-title/entity-title.component";
 import {SettingButtonComponent} from "../../settings/_components/setting-button/setting-button.component";
 import {CoverImageChooserComponent} from "../../cards/cover-image-chooser/cover-image-chooser.component";
@@ -47,6 +47,7 @@ import {ImageComponent} from "../../shared/image/image.component";
 import {SafeHtmlPipe} from "../../_pipes/safe-html.pipe";
 import {ReadTimePipe} from "../../_pipes/read-time.pipe";
 import {ChapterService} from "../../_services/chapter.service";
+import {LibraryService} from "../../_services/library.service";
 import {AgeRating} from "../../_models/metadata/age-rating";
 import {BreakpointService} from "../../_services/breakpoint.service";
 import {ActionItem} from "../../_models/actionables/action-item";
@@ -101,6 +102,7 @@ const blackList = [Action.Edit, Action.IncognitoRead, Action.AddToReadingList];
 })
 export class EditChapterModalComponent implements OnInit {
 
+  protected readonly LibraryType = LibraryType;
   protected readonly modal = inject(NgbActiveModal);
   public readonly imageService = inject(ImageService);
   private readonly uploadService = inject(UploadService);
@@ -112,6 +114,7 @@ export class EditChapterModalComponent implements OnInit {
   private readonly actionService = inject(ActionService);
   private readonly downloadService = inject(DownloadService);
   private readonly chapterService = inject(ChapterService);
+  private readonly libraryService = inject(LibraryService);
   protected readonly breakpointService = inject(BreakpointService);
   private readonly coverChooserConfigFactory = inject(CoverChooserConfigFactoryService);
   private readonly typeaheadSettingsFactory = inject(TypeaheadSettingsFactoryService);
@@ -127,6 +130,7 @@ export class EditChapterModalComponent implements OnInit {
   coverImageReset = false;
   coverImageDirty = false;
   chooserConfig = signal<CoverImageChooserConfig>({});
+  enableDriveThruRpgMetadata = signal(false);
 
 
   tagsSettings = signal<TypeaheadSettings<Tag> | null>(null);
@@ -164,6 +168,13 @@ export class EditChapterModalComponent implements OnInit {
   ngOnInit() {
     this.initChapter = Object.assign({}, this.chapter);
 
+    if (this.accountService.hasAdminRole()) {
+      this.libraryService.getLibrary(this.libraryId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(library => {
+        this.enableDriveThruRpgMetadata.set(library.enableDriveThruRpgMetadata ?? false);
+        this.cdRef.markForCheck();
+      });
+    }
+
     this.size = (<Chapter>this.chapter).files.reduce((sum, v) => sum + v.bytes, 0);
 
     this.chooserConfig.set(this.coverChooserConfigFactory.forChapter(this.chapter, this.libraryType, this.seriesId));
@@ -176,6 +187,7 @@ export class EditChapterModalComponent implements OnInit {
     this.editForm.addControl('summary', new FormControl(this.chapter.summary || '', []));
     this.editForm.addControl('language', new FormControl(this.chapter.language, []));
     this.editForm.addControl('isbn', new FormControl(this.chapter.isbn, []));
+    this.editForm.addControl('driveThruRpgId', new FormControl(this.chapter.driveThruRpgId ?? null, []));
     this.editForm.addControl('ageRating', new FormControl(this.chapter.ageRating, []));
     addMetadataIdControls(this.editForm, this.chapter);
 
@@ -263,6 +275,8 @@ export class EditChapterModalComponent implements OnInit {
     this.chapter.hardcoverId = model.hardcoverId;
     this.chapter.metronId = model.metronId;
     this.chapter.language = model.language;
+    const productId = Number(model.driveThruRpgId);
+    this.chapter.driveThruRpgId = Number.isInteger(productId) && productId > 0 ? productId : null;
 
 
     const apis = [
@@ -276,6 +290,25 @@ export class EditChapterModalComponent implements OnInit {
 
     concat(...apis).subscribe(results => {
       this.modal.close(modalSaved(model, needsCoverUpdate));
+    });
+  }
+
+  refreshDriveThruRpgMetadata() {
+    const value = this.editForm.get('driveThruRpgId')?.value;
+    const productId = Number(value);
+    this.chapter.driveThruRpgId = Number.isInteger(productId) && productId > 0 ? productId : null;
+
+    const apis = [this.chapterService.updateChapter(this.chapter)];
+    const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
+    if (this.coverImageDirty) {
+      apis.push(this.uploadService.updateChapterCoverImage(this.chapter.id, this.selectedCover, true));
+    }
+
+    concat(...apis).pipe(
+      switchMap(() => this.chapterService.refreshDriveThruRpgMetadata(this.chapter.id)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.modal.close(modalSaved(this.chapter, needsCoverUpdate));
     });
   }
 

@@ -36,6 +36,10 @@ export class ExternalMetadataDetailComponent {
   entity = input.required<IHasMetadataIds>();
   /** Extra id to show in this section for details-tab */
   isbn = input<string | null>(null);
+  driveThruRpgId = input<number | null>(null);
+  showDriveThruRpg = input(false);
+  rpgGeekId = input<number | null>(null);
+  showRpgGeek = input(false);
 
   /**
    * Assume ids link to individual works instead of series where applicable

@@ -116,8 +116,12 @@ public class MetadataService(
     /// <param name="volume"></param>
     /// <param name="forceUpdate">Force updating cover image even if underlying file has not been modified or chapter already has a cover image</param>
     /// <param name="forceColorScape">Force updating colorscape</param>
-    private bool UpdateVolumeCoverImage(Volume? volume, bool forceUpdate, bool forceColorScape = false)
+    private bool UpdateVolumeCoverImage(Volume? volume, bool forceUpdate, bool forceColorScape = false, bool isRpg = false)
     {
+        // The provider's cover belongs to the Manual, not any of its alternative versions.
+        if (isRpg && volume?.DriveThruRpgId.HasValue == true
+            && !string.IsNullOrEmpty(volume.CoverImage)) return false;
+
         // We need to check if Volume coverImage matches first chapters if forceUpdate is false
         if (volume == null) return false;
 
@@ -197,7 +201,7 @@ public class MetadataService(
     /// <param name="series"></param>
     /// <param name="forceUpdate"></param>
     /// <param name="encodeFormat"></param>
-    private async Task ProcessSeriesCoverGen(Series series, bool forceUpdate, EncodeFormat encodeFormat, CoverImageSize coverImageSize, bool forceColorScape = false)
+    private async Task ProcessSeriesCoverGen(Series series, bool forceUpdate, EncodeFormat encodeFormat, CoverImageSize coverImageSize, bool forceColorScape = false, bool isRpg = false)
     {
         logger.LogDebug("[MetadataService] Processing cover image generation for series: {SeriesName}", series.OriginalName);
         try
@@ -222,7 +226,7 @@ public class MetadataService(
                     index++;
                 }
 
-                var volumeUpdated = UpdateVolumeCoverImage(volume, firstChapterUpdated || forceUpdate, forceColorScape);
+                var volumeUpdated = UpdateVolumeCoverImage(volume, firstChapterUpdated || forceUpdate, forceColorScape, isRpg);
                 if (volumeIndex == 0 && volumeUpdated)
                 {
                     firstVolumeUpdated = true;
@@ -302,7 +306,8 @@ public class MetadataService(
 
                 try
                 {
-                    await ProcessSeriesCoverGen(series, forceUpdate, encodeFormat, coverImageSize, forceColorScape);
+                    await ProcessSeriesCoverGen(series, forceUpdate, encodeFormat, coverImageSize, forceColorScape,
+                        library.Type == LibraryType.Rpg);
                 }
                 catch (Exception ex)
                 {
@@ -545,7 +550,8 @@ public class MetadataService(
         await eventHub.SendMessageAsync(MessageFactory.NotificationProgress,
             MessageFactory.CoverUpdateProgressEvent(series.LibraryId, 0F, ProgressEventType.Started, series.Name), ct: ct);
 
-        await ProcessSeriesCoverGen(series, forceUpdate, encodeFormat, coverImageSize, forceColorScape);
+        await ProcessSeriesCoverGen(series, forceUpdate, encodeFormat, coverImageSize, forceColorScape,
+            series.Library?.Type == LibraryType.Rpg);
 
 
         if (unitOfWork.HasChanges())

@@ -129,7 +129,7 @@
         [ngbTooltip]="tooltip()"
         placement="top"
         [id]="'entity-' + entityId()">
-        <a class="dark-exempt btn-icon" [routerLink]="titleRoute()" [queryParams]="titleRouteParams()">
+        <a class="dark-exempt btn-icon" [routerLink]="config().titleClickFunc ? null : titleRoute()" [queryParams]="titleRouteParams()" (click)="onTitleClick($event)">
           @if (hasTitleTemplate()) {
             <ng-container *ngTemplateOutlet="titleTemplate()!; context: { $implicit: entity() }" />
           } @else {

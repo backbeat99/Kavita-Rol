@@ -1,4 +1,5 @@
 import {inject, Injectable, TemplateRef} from "@angular/core";
+import {translate} from "@jsverse/transloco";
 import {ImageService} from "./image.service";
 import {ReaderService} from "./reader.service";
 import {ActionableEntity, ActionFactoryService} from "./action-factory.service";
@@ -28,6 +29,7 @@ import {ActionItem} from "../_models/actionables/action-item";
 import {SeriesGroup} from "../_models/series-group";
 import {AccountService} from "./account.service";
 import {Action} from "../_models/actionables/action";
+import {RpgMaterialType, RPG_RESOURCE_TYPES} from "../_models/library/rpg-material-type";
 
 export interface ConfigCardFactoryBaseParameters<T> {
   shouldRenderAction?: (action: ActionItem<T>, entity: T, user: User) => boolean,
@@ -47,6 +49,7 @@ export interface ConfigCardFactoryChapterVolumeParameters<T extends ActionableEn
   seriesId: number;
   libraryId: number;
   libraryType: number;
+  rpgMaterialType?: RpgMaterialType;
 }
 
 
@@ -207,17 +210,28 @@ export class CardConfigFactory {
       selectionType: 'chapter',
       suppressArchiveWarning: false,
 
-      coverFunc: (c) => this.imageService.getChapterCoverImage(c.id),
+      coverFunc: (c) => params.libraryType === LibraryType.Rpg
+        ? this.imageService.getVolumeCoverImage(c.volumeId)
+        : this.imageService.getChapterCoverImage(c.id),
       titleFunc: (c) => this.entityTitleService.computeTitle(c, params.libraryType, { prioritizeTitleName: false }),
       titleRouteFunc: (c) => `/library/${params.libraryId}/series/${params.seriesId}/chapter/${c.id}`,
+      titleClickFunc: params.libraryType === LibraryType.Rpg
+        ? (c) => this.readerService.readChapter(params.libraryId, params.seriesId, c,
+          RPG_RESOURCE_TYPES.includes(params.rpgMaterialType ?? RpgMaterialType.Unclassified))
+        : undefined,
       metaTitleFunc: (c, wrapper) => {
         if (c.isSpecial) {
           return c.title || c.range;
         }
         return c.titleName || '';
       },
-      tooltipFunc: (c) => c.titleName || c.title || (c.range === (LooseLeafOrDefaultNumber + '') ? '' : c.range),
-      progressFunc: (c) => ({ pages: c.pages, pagesRead: c.pagesRead }),
+      tooltipFunc: (c) => params.libraryType === LibraryType.Rpg
+        ? (c.title || c.range)
+        : (c.titleName || c.title || (c.range === (LooseLeafOrDefaultNumber + '') ? '' : c.range)),
+      progressFunc: (c) => params.libraryType === LibraryType.Rpg
+        && RPG_RESOURCE_TYPES.includes(params.rpgMaterialType ?? RpgMaterialType.Unclassified)
+        ? ({pages: 0, pagesRead: 0})
+        : ({ pages: c.pages, pagesRead: c.pagesRead }),
       titleTemplate: params?.titleRef,
       metaTitleTemplate: params?.metaTitleRef,
 
@@ -227,11 +241,17 @@ export class CardConfigFactory {
         const wrapper = params?.overrides as unknown as ChapterCardEntity;
         return c.pages === 0 && !wrapper?.suppressArchiveWarning;
       },
-      ariaLabelFunc: (c) => c.titleName || c.title || (c.range === (LooseLeafOrDefaultNumber + '') ? '' : c.range),
+      ariaLabelFunc: (c) => params.libraryType === LibraryType.Rpg
+        ? (c.title || c.range)
+        : (c.titleName || c.title || (c.range === (LooseLeafOrDefaultNumber + '') ? '' : c.range)),
 
       actionableFunc: (c) => this.actionFactory.getChapterActions(params.seriesId, params.libraryId, params.libraryType, params?.shouldRenderAction),
-      readFunc: (c) => this.readerService.readChapter(params.libraryId, params.seriesId, c, false),
-      clickFunc: (c) => this.router.navigate(['library', params.libraryId, 'series', params.seriesId, 'chapter', c.id]),
+      readFunc: (c) => this.readerService.readChapter(params.libraryId, params.seriesId, c,
+        params.libraryType === LibraryType.Rpg && RPG_RESOURCE_TYPES.includes(params.rpgMaterialType ?? RpgMaterialType.Unclassified)),
+      clickFunc: (c) => params.libraryType === LibraryType.Rpg
+        ? this.readerService.readChapter(params.libraryId, params.seriesId, c,
+          RPG_RESOURCE_TYPES.includes(params.rpgMaterialType ?? RpgMaterialType.Unclassified))
+        : this.router.navigate(['library', params.libraryId, 'series', params.seriesId, 'chapter', c.id]),
 
       downloadItemFunc: (c) => this.downloadService.getItemForEntity(c, true),
 
@@ -262,8 +282,11 @@ export class CardConfigFactory {
       titleFunc: (v) => v.name,
       titleRouteFunc: (v) => `/library/${params.libraryId}/series/${params.seriesId}/volume/${v.id}`,
       metaTitleFunc: (v) => {
+        if (params.libraryType === LibraryType.Rpg) {
+          return translate('edit-volume-modal.material-type-' + (v.rpgMaterialType ?? RpgMaterialType.Unclassified));
+        }
         if (params.libraryType === LibraryType.Images) return '';
-        if ([LibraryType.LightNovel || LibraryType.Book].includes(params.libraryType)) {
+        if ([LibraryType.LightNovel, LibraryType.Book, LibraryType.Rpg].includes(params.libraryType)) {
           return v.name;
         }
         if (v.hasOwnProperty('chapters') && v.chapters.length === 1 && v.chapters[0].titleName) {
@@ -273,22 +296,31 @@ export class CardConfigFactory {
         return v.name;
       },
       tooltipFunc: (v) => v.name,
-      progressFunc: (v) => ({ pages: v.pages, pagesRead: v.pagesRead }),
+      progressFunc: (v) => params.libraryType === LibraryType.Rpg
+        ? ({pages: 0, pagesRead: 0})
+        : ({ pages: v.pages, pagesRead: v.pagesRead }),
 
       titleTemplate: params?.titleRef,
       metaTitleTemplate: params?.metaTitleRef,
 
       formatBadgeFunc: () => null,
       // Show file count if there are duplicate files for volume, not just chapter count
-      countFunc: (v) => (v?.chapters || [])
-        .filter(c => c.minNumber === LooseLeafOrDefaultNumber)
-        .flatMap(c => c.files)
-        .length,
+      countFunc: (v) => params.libraryType === LibraryType.Rpg
+        ? (v?.chapters || []).length
+        : (v?.chapters || [])
+          .filter(c => c.minNumber === LooseLeafOrDefaultNumber)
+          .flatMap(c => c.files)
+          .length,
       showErrorFunc: (v) => v.pages === 0,
       ariaLabelFunc: (v) => v.name,
 
       actionableFunc: (v) => this.actionFactory.getVolumeActions(params.seriesId, params.libraryId, params.libraryType, params?.shouldRenderAction),
-      readFunc: (v) => {
+      readFunc: params.libraryType === LibraryType.Rpg ? (v) => {
+        const firstVersion = v.chapters?.[0];
+        if (!firstVersion || v.chapters.length !== 1) return;
+        const isResource = RPG_RESOURCE_TYPES.includes(v.rpgMaterialType ?? RpgMaterialType.Unclassified);
+        this.readerService.readChapter(params.libraryId, params.seriesId, firstVersion, isResource);
+      } : (v) => {
         this.readerService.readVolume(params.libraryId, params.seriesId, v, false);
       },
       clickFunc: (v) => this.router.navigate(['library', params.libraryId, 'series', params.seriesId, 'volume', v.id]),

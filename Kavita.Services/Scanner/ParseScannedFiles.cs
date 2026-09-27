@@ -303,7 +303,8 @@ public partial class ParseScannedFiles
     /// </summary>
     /// <param name="scanResults">A collection of scan results</param>
     /// <param name="scannedSeries">A concurrent dictionary to store the tracked series</param>
-    public void TrackSeriesAcrossScanResults(IList<ScanResult> scanResults, ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries)
+    public void TrackSeriesAcrossScanResults(IList<ScanResult> scanResults, ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries,
+        LibraryType libraryType = LibraryType.Manga)
     {
         // Flatten all ParserInfos from scanResults
         var allInfos = scanResults.SelectMany(sr => sr.ParserInfos).ToList();
@@ -315,7 +316,7 @@ public partial class ParseScannedFiles
 
             try
             {
-                TrackSeries(scannedSeries, info);
+                TrackSeries(scannedSeries, info, libraryType);
             }
             catch (Exception ex)
             {
@@ -331,7 +332,7 @@ public partial class ParseScannedFiles
     /// </summary>
     /// <param name="scannedSeries">A localized list of a series' parsed infos</param>
     /// <param name="info"></param>
-    private void TrackSeries(ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries, ParserInfo? info)
+    private void TrackSeries(ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries, ParserInfo? info, LibraryType libraryType)
     {
         if (info == null || info.Series == string.Empty) return;
 
@@ -352,7 +353,7 @@ public partial class ParseScannedFiles
         }
 
         // Check if normalized info.Series already exists and if so, update info to use that name instead
-        info.Series = MergeName(scannedSeries, info);
+        info.Series = MergeName(scannedSeries, info, libraryType == LibraryType.Rpg);
 
         // BUG: This will fail for Solo Leveling & Solo Leveling (Manga)
 
@@ -394,7 +395,7 @@ public partial class ParseScannedFiles
 
         bool Guard(ParsedSeries series)
         {
-            return MergeNameGuard(series.Format, series.NormalizedName, info.Format,
+            return MergeNameGuard(series.Format, series.NormalizedName, info.Format, libraryType == LibraryType.Rpg,
                 normalizedSeries, normalizedSortSeries, normalizedLocalizedSeries);
         }
     }
@@ -407,7 +408,7 @@ public partial class ParseScannedFiles
     /// <param name="scannedSeries"></param>
     /// <param name="info"></param>
     /// <returns>Series Name to group this info into</returns>
-    private string MergeName(ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries, ParserInfo info)
+    private string MergeName(ConcurrentDictionary<ParsedSeries, List<ParserInfo>> scannedSeries, ParserInfo info, bool isRpg)
     {
 
         var normalizedName = info.Series.ToNormalized();
@@ -446,7 +447,7 @@ public partial class ParseScannedFiles
 
         bool Guard(KeyValuePair<ParsedSeries, List<ParserInfo>> p)
         {
-            return MergeNameGuard(p.Key.Format, p.Key.NormalizedName, info.Format,
+            return MergeNameGuard(p.Key.Format, p.Key.NormalizedName, info.Format, isRpg,
                 normalizedName, normalizedSortName, normalizedLocalizedName);
         }
     }
@@ -461,9 +462,9 @@ public partial class ParseScannedFiles
     /// <returns></returns>
     private static bool MergeNameGuard(
         MangaFormat mergeIntoFormat, string mergeIntoSeries,
-        MangaFormat format, params string[] normalizedNames)
+        MangaFormat format, bool isRpg, params string[] normalizedNames)
     {
-        if (mergeIntoFormat != format) return false;
+        if (!isRpg && mergeIntoFormat != format) return false;
 
         if (string.IsNullOrEmpty(mergeIntoSeries)) return false;
 
@@ -536,7 +537,7 @@ public partial class ParseScannedFiles
         scanResults = MergeLocalizedSeriesAcrossScanResults(scanResults);
 
         _logger.LogDebug("\t[ScannerService] Library {LibraryName} Step 1.E: Group all parsed data into logical Series", library.Name);
-        TrackSeriesAcrossScanResults(scanResults, scannedSeries);
+        TrackSeriesAcrossScanResults(scanResults, scannedSeries, library.Type);
 
 
         // Now transform and add to processedScannedSeries AFTER everything is processed

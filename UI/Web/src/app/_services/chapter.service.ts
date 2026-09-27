@@ -30,6 +30,10 @@ export class ChapterService {
     return this.httpClient.post(this.baseUrl + 'chapter/update', chapter, TextResonse);
   }
 
+  refreshDriveThruRpgMetadata(chapterId: number) {
+    return this.httpClient.post(this.baseUrl + `chapter/drivethrurpg/refresh?chapterId=${chapterId}`, {});
+  }
+
   chapterDetailPlus(seriesId: number, chapterId: number) {
     return this.httpClient.get<ChapterDetailPlus>(this.baseUrl + `chapter/chapter-detail-plus?chapterId=${chapterId}&seriesId=${seriesId}`);
   }

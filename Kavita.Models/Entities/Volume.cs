@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Interfaces;
 using Kavita.Models.Entities.MetadataMatching;
 
@@ -63,6 +64,27 @@ public class Volume : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasMet
     public string ComicVineId { get; set; }
     public int MangaBakaId { get; set; }
     public int CbrId { get; set; }
+    /// <summary>
+    /// DriveThruRPG product identifier shared by all reading versions of this manual.
+    /// </summary>
+    public int? DriveThruRpgId { get; set; }
+    /// <summary>RPG-only material classification. Existing records remain unclassified.</summary>
+    public RpgMaterialType RpgMaterialType { get; set; } = RpgMaterialType.Unclassified;
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; } = DriveThruRpgMatchStatus.NotSearched;
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
+    /// <summary>RPGGeek item identifier (xmlapi2). Independent of DriveThruRPG.</summary>
+    public int? RpgGeekId { get; set; }
+    public RpgGeekMatchStatus RpgGeekMatchStatus { get; set; } = RpgGeekMatchStatus.NotSearched;
+    public DateTime? RpgGeekLastCheckedUtc { get; set; }
+
+    /// <summary>Shared bibliographic title lock. Only meaningful for RPG publications.</summary>
+    public bool NameLocked { get; set; }
+    public string Summary { get; set; } = string.Empty;
+    public bool SummaryLocked { get; set; }
+    public DateTime? ReleaseDate { get; set; }
+    public bool ReleaseDateLocked { get; set; }
+    public string Language { get; set; } = string.Empty;
+    public bool LanguageLocked { get; set; }
 
     #endregion
 

@@ -48,6 +48,8 @@ export class EntityTitleService {
       case LibraryType.Book:
       case LibraryType.LightNovel:
         return 'common.book-num-shorthand';
+      case LibraryType.Rpg:
+        return 'entity-title.version-num';
       default:
         return 'common.chapter-num-shorthand';
     }
@@ -60,6 +62,8 @@ export class EntityTitleService {
       case LibraryType.Book:
       case LibraryType.LightNovel:
         return this.translocoService.translate('entity-title.book-title' + pluralKeyPart);
+      case LibraryType.Rpg:
+        return this.translocoService.translate('entity-title.version-title' + pluralKeyPart);
       case LibraryType.Comic:
       case LibraryType.ComicVine:
         return this.translocoService.translate('entity-title.issue-title' + pluralKeyPart);
@@ -83,6 +87,12 @@ export class EntityTitleService {
     const includeVolume = options?.includeVolume ?? false;
 
     const isChapter = this.utilityService.isChapter(entity);
+
+    if (libraryType === LibraryType.Rpg) {
+      return isChapter
+        ? ((entity as Chapter).title || (entity as Chapter).range || '')
+        : ((entity as Volume).name || '');
+    }
 
     // Special chapters always display their title directly
     if (isChapter && (entity as Chapter).isSpecial) {

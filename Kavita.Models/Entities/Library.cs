@@ -54,6 +54,14 @@ public class Library : IEntityDate, IHasCoverImage
     /// </summary>
     public bool EnableMetadata { get; set; } = true;
     /// <summary>
+    /// Enables native DriveThruRPG metadata matching for this library.
+    /// </summary>
+    public bool EnableDriveThruRpgMetadata { get; set; }
+    /// <summary>
+    /// Enables native RPGGeek metadata matching for this library. Requires BGG_API_TOKEN.
+    /// </summary>
+    public bool EnableRpgGeekMetadata { get; set; }
+    /// <summary>
     /// Should Kavita remove sort articles "The" for the sort name
     /// </summary>
     public bool RemovePrefixForSortName { get; set; } = false;

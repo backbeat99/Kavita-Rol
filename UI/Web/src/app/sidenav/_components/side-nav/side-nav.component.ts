@@ -182,6 +182,7 @@ export class SideNavComponent {
     switch (format) {
       case LibraryType.Book:
       case LibraryType.LightNovel:
+      case LibraryType.Rpg:
         return 'fa-book';
       case LibraryType.Comic:
       case LibraryType.ComicVine:

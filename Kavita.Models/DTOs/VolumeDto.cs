@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Kavita.Models.Entities.Interfaces;
+using Kavita.Models.Entities.Enums;
 
 namespace Kavita.Models.DTOs;
 
@@ -64,6 +65,21 @@ public sealed record VolumeDto : IHasReadTimeEstimate, IHasCoverImage, IHasMetad
     public string? ComicVineId { get; set; }
     public int MangaBakaId { get; set; }
     public int CbrId { get; set; }
+    public int? DriveThruRpgId { get; set; }
+    public RpgMaterialType RpgMaterialType { get; set; } = RpgMaterialType.Unclassified;
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; } = DriveThruRpgMatchStatus.NotSearched;
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
+    public int? RpgGeekId { get; set; }
+    public RpgGeekMatchStatus RpgGeekMatchStatus { get; set; } = RpgGeekMatchStatus.NotSearched;
+    public DateTime? RpgGeekLastCheckedUtc { get; set; }
+
+    public bool NameLocked { get; set; }
+    public string Summary { get; set; } = string.Empty;
+    public bool SummaryLocked { get; set; }
+    public DateTime? ReleaseDate { get; set; }
+    public bool ReleaseDateLocked { get; set; }
+    public string Language { get; set; } = string.Empty;
+    public bool LanguageLocked { get; set; }
 
     #endregion
 

@@ -70,6 +70,10 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IScannerService, ScannerService>();
         services.AddScoped<IProcessSeries, ProcessSeries>();
         services.AddScoped<IMetadataService, MetadataService>();
+        services.AddHttpClient<IDriveThruRpgClient, DriveThruRpgClient>();
+        services.AddScoped<IDriveThruRpgMetadataService, DriveThruRpgMetadataService>();
+        services.AddHttpClient<IRpgGeekClient, RpgGeekClient>();
+        services.AddScoped<IRpgGeekMetadataService, RpgGeekMetadataService>();
         services.AddScoped<IWordCountAnalyzerService, WordCountAnalyzerService>();
         services.AddScoped<ILibraryWatcher, LibraryWatcher>();
         services.AddScoped<ITachiyomiService, TachiyomiService>();

@@ -131,6 +131,8 @@ export class LibrarySettingsModalComponent implements OnInit {
     allowMetadataMatching: new FormControl<boolean>(true, { nonNullable: true, validators: [] }),
     collapseSeriesRelationships: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
     enableMetadata: new FormControl<boolean>(true, { nonNullable: true, validators: [] }), // required validator doesn't check value, just if true
+    enableDriveThruRpgMetadata: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
+    enableRpgGeekMetadata: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
     removePrefixForSortName: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
     inheritWebLinksFromFirstChapter: new FormControl<boolean>(false, { nonNullable: true, validators: []}),
     defaultLanguage: new FormControl<string>('', {nonNullable: true, validators: []}),
@@ -177,6 +179,7 @@ export class LibrarySettingsModalComponent implements OnInit {
     effect(() => {
       if (!this.validMetadataProviders.hasValue()) return;
       const validMetadataProviders = this.validMetadataProviders.value();
+      if (validMetadataProviders.length === 0) return;
       const selectedMetadataProvider = this.libraryForm.get('metadataProvider')!.value as MetadataProvider;
 
       if (!validMetadataProviders.includes(selectedMetadataProvider)) {
@@ -207,11 +210,19 @@ export class LibrarySettingsModalComponent implements OnInit {
       })
     ).subscribe();
 
+    // The sidenav object may be stale; sync the RPG metadata switches with the server's truth.
+    if (this.library !== undefined) {
+      this.libraryService.getLibrary(this.library.id).pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(library => {
+          this.libraryForm.get('enableDriveThruRpgMetadata')?.setValue(library.enableDriveThruRpgMetadata ?? false);
+          this.libraryForm.get('enableRpgGeekMetadata')?.setValue(library.enableRpgGeekMetadata ?? false);
+        });
+    }
+
     this.libraryForm.get('name')?.valueChanges.pipe(
       debounceTime(100),
       distinctUntilChanged(),
-      switchMap(name => this.libraryService.libraryNameExists(name)),
-      tap(exists => {
+      switchMap(name => this.libraryService.libraryNameExists(name)),      tap(exists => {
         const isExistingName = this.libraryForm.get('name')?.value === this.library?.name;
         if (!exists || isExistingName) {
           this.libraryForm.get('name')?.setErrors(null);
@@ -263,6 +274,7 @@ export class LibrarySettingsModalComponent implements OnInit {
             this.libraryForm.get(FileTypeGroup.Epub + '')?.setValue(false);
             break;
           case LibraryType.Book:
+          case LibraryType.Rpg:
             this.libraryForm.get(FileTypeGroup.Archive + '')?.setValue(false);
             this.libraryForm.get(FileTypeGroup.Images + '')?.setValue(false);
             this.libraryForm.get(FileTypeGroup.Pdf + '')?.setValue(true);
@@ -290,7 +302,7 @@ export class LibrarySettingsModalComponent implements OnInit {
           this.libraryForm.get('allowScrobbling')?.enable();
         }
 
-        this.libraryForm.get('allowMetadataMatching')?.setValue(true);
+        this.libraryForm.get('allowMetadataMatching')?.setValue(libType !== LibraryType.Rpg);
 
         this.cdRef.markForCheck();
       }),
@@ -314,6 +326,8 @@ export class LibrarySettingsModalComponent implements OnInit {
       this.libraryForm.get('metadataProvider')?.setValue(this.library.metadataProvider);
       this.libraryForm.get('excludePatterns')?.setValue(this.excludePatterns ? this.library.excludePatterns : false);
       this.libraryForm.get('enableMetadata')?.setValue(this.library.enableMetadata);
+      this.libraryForm.get('enableDriveThruRpgMetadata')?.setValue(this.library.enableDriveThruRpgMetadata ?? false);
+      this.libraryForm.get('enableRpgGeekMetadata')?.setValue(this.library.enableRpgGeekMetadata ?? false);
       this.libraryForm.get('removePrefixForSortName')?.setValue(this.library.removePrefixForSortName);
       this.libraryForm.get('inheritWebLinksFromFirstChapter')?.setValue(this.library.inheritWebLinksFromFirstChapter);
       this.libraryForm.get('defaultLanguage')?.setValue(this.library.defaultLanguage);

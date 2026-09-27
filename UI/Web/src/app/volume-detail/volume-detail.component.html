@@ -6,7 +6,7 @@
 
     <div class="row mb-0 mb-xl-3 info-container">
       <div [ngClass]="{'mobile-bg': mobileSeriesImgBackground}" class="image-container col-5 col-sm-6 col-md-5 col-lg-5 col-xl-2 col-xxl-2 col-xxxl-2 d-none d-sm-block mb-3 position-relative">
-        <app-cover-image [entity]="volume()" [coverImage]="coverImage()" [continueTitle]="continuePoint()" (read)="readVolume()" />
+        <app-cover-image [entity]="volume()" [coverImage]="coverImage()" [continueTitle]="continuePoint()" [showRead]="libraryType() !== LibraryType.Rpg" [showProgress]="libraryType() !== LibraryType.Rpg" (read)="readVolume()" />
       </div>
 
       <div class="col-xl-10 col-lg-7 col-md-12 col-xs-12 col-sm-12">
@@ -15,7 +15,11 @@
         </h4>
         <div class="subtitle mt-2 mb-2">
             <span>
-              {{t('volume-num')}}
+              @if (libraryType() === LibraryType.Rpg) {
+                {{t(isRpgResource() ? 'rpg-resource-label' : 'rpg-publication-label')}}
+              } @else {
+                {{t('volume-num')}}
+              }
               <app-entity-title [libraryType]="libraryType()" [entity]="volume()" [prioritizeTitleName]="true" />
             </span>
         </div>
@@ -27,11 +31,30 @@
                                  [libraryType]="libraryType()"
                                  [mangaFormat]="series().format"
                                  [totalBytes]="size()"
-                                 [releaseYear]="(volume().chapters.at(0)?.releaseDate | utcToLocalDate)?.getFullYear()"
+                                 [releaseYear]="((libraryType() === LibraryType.Rpg ? volume().releaseDate : volume().chapters.at(0)?.releaseDate) | utcToLocalDate)?.getFullYear()"
                                  [totalReads]="totalReads()"
         />
 
-        @if (volume().chapters.length === 1) {
+        @if (libraryType() === LibraryType.Rpg && !isRpgResource()) {
+          <div class="mt-2 mb-3">
+            <app-drive-thru-rpg-metadata [volume]="volume()"
+                                         [libraryId]="libraryId()"
+                                         [seriesId]="seriesId()"
+                                         [seriesName]="series().name"
+                                         [providerEnabled]="library().enableDriveThruRpgMetadata"
+                                         [isAdmin]="accountService.hasAdminRole()"
+                                         (reload)="loadVolume()" />
+            <app-rpg-geek-metadata class="mt-2 d-block" [volume]="volume()"
+                                   [libraryId]="libraryId()"
+                                   [seriesId]="seriesId()"
+                                   [seriesName]="series().name"
+                                   [providerEnabled]="library().enableRpgGeekMetadata"
+                                   [isAdmin]="accountService.hasAdminRole()"
+                                   (reload)="loadVolume()" />
+          </div>
+        }
+
+        @if (volume().chapters.length === 1 && libraryType() !== LibraryType.Rpg) {
           <div class="mt-2 mb-2">
             <app-external-rating [seriesId]="seriesId()"
                                  [ratings]="[]"
@@ -46,25 +69,32 @@
         <div class="mt-2 mb-3">
           <div class="row g-0">
             <div class="col-auto">
-              <div class="btn-group">
-                <button type="button" class="btn btn-outline-primary" (click)="readVolume()">
+              @if (libraryType() !== LibraryType.Rpg) {
+                <div class="btn-group">
+                  <button type="button" class="btn btn-outline-primary" (click)="readVolume()">
                     <span>
                       <i class="{{readingProgressStatus() | readingProgressIconPipe}}" aria-hidden="true"></i>
                       <span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe}}</span>
                     </span>
-                </button>
-                <div class="btn-group" ngbDropdown role="group" display="dynamic" [attr.aria-label]="t('read-options-alt')">
-                  <button type="button" class="btn btn-outline-primary dropdown-toggle-split" ngbDropdownToggle></button>
-                  <div class="dropdown-menu" ngbDropdownMenu>
-                    <button ngbDropdownItem (click)="readVolume(true)">
+                  </button>
+                  <div class="btn-group" ngbDropdown role="group" display="dynamic" [attr.aria-label]="t('read-options-alt')">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle-split" ngbDropdownToggle></button>
+                    <div class="dropdown-menu" ngbDropdownMenu>
+                      <button ngbDropdownItem (click)="readVolume(true)">
                         <span>
                           <i class="fa fa-glasses" aria-hidden="true"></i>
                           <span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe:true}}</span>
                         </span>
-                    </button>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              } @else if (volume().chapters.length === 1) {
+                <button type="button" class="btn btn-outline-primary" (click)="readVolume()">
+                  <i class="fa fa-book" aria-hidden="true"></i>
+                  <span class="ms-1">{{t('read')}}</span>
+                </button>
+              }
             </div>
 
 
@@ -83,16 +113,20 @@
               </div>
             </div>
 
-            <div class="col-auto ms-2 d-none d-md-block">
-              <app-download-button [entity]="volume()" [entityType]="DownloadEntityType.Volume" [libraryId]="libraryId()" [seriesId]="seriesId()" />
-            </div>
+            @if (libraryType() !== LibraryType.Rpg) {
+              <div class="col-auto ms-2 d-none d-md-block">
+                <app-download-button [entity]="volume()" [entityType]="DownloadEntityType.Volume" [libraryId]="libraryId()" [seriesId]="seriesId()" />
+              </div>
+            }
 
           </div>
         </div>
 
-        <div class="mt-2 mb-3">
-          <app-read-more [text]="volume().chapters[0].summary || ''" [useResponsiveLength]="true" />
-        </div>
+        @if (!isRpgResource() && volume().chapters[0]) {
+          <div class="mt-2 mb-3">
+            <app-read-more [text]="(libraryType() === LibraryType.Rpg ? volume().summary : volume().chapters[0].summary) || ''" [useResponsiveLength]="true" />
+          </div>
+        }
 
         <div class="mt-2">
           <div class="row g-0">
@@ -159,7 +193,7 @@
       <ul ngbNav #nav="ngbNav" [(activeId)]="activeTabId" class="nav nav-tabs" (navChange)="onNavChange($event)">
         <li [ngbNavItem]="Tabs.Chapters">
           <a ngbNavLink>
-            {{chapterTabName()}}
+            {{libraryType() === LibraryType.Rpg ? t('rpg-files-label') : chapterTabName()}}
             <span class="badge rounded-pill text-bg-secondary">{{volume().chapters.length}}</span>
           </a>
           <ng-template ngbNavContent>
@@ -171,6 +205,7 @@
                                       [seriesId]="seriesId()"
                                       [libraryId]="libraryId()"
                                       [libraryType]="libraryType()"
+                                      [rpgMaterialType]="volume().rpgMaterialType"
                                       [index]="scroll.viewPortInfo.startIndexWithBuffer + idx"
                                       [maxIndex]="volume().chapters.length"
                                       [allowSelection]="true"
@@ -234,6 +269,8 @@
                                [files]="files()"
                                [basicMetadata]="volumeBasicMetadata()"
                                [individualWork]="true"
+                               [showDriveThruRpg]="libraryType() === LibraryType.Rpg"
+                               [showRpgGeek]="libraryType() === LibraryType.Rpg"
               />
             }
           </ng-template>

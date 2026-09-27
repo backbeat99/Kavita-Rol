@@ -803,7 +803,8 @@
         "manga": "Manga",
         "comicVine": "Comic",
         "image": "Image",
-        "lightNovel": "Light Novel"
+        "lightNovel": "Light Novel",
+        "rpg": "RPG"
     },
 
     "library-type-subtitle-pipe": {
@@ -812,7 +813,8 @@
         "manga": "Japanese comics with volume grouping support. Also handles some loose image configurations.",
         "comicVine": "Strict comic implementation based on Comic Vine metadata with integration for specialized tooling.",
         "image": "Loose image files with limited support. Must largely follow wiki documentation.",
-        "lightNovel": "Book library with special handling optimized for light novels"
+        "lightNovel": "Book library with special handling optimized for light novels",
+        "rpg": "Tabletop role-playing game library for manuals and selectable reading versions."
     },
 
     "age-rating-pipe": {
@@ -1537,6 +1539,17 @@
         "release-date-title": "Release",
 
         "volume-num": "{{common.volume-num}}",
+        "manual-label": "Manual",
+        "manuals-tab": "Manuals",
+        "rpg-publications-and-resources": "Publications & resources",
+        "rpg-core-manual": "Core manual",
+        "rpg-publications": "Other publications",
+        "rpg-resources": "Resources",
+        "rpg-unclassified": "Unclassified material",
+        "rpg-materials-empty": "No publications or resources have been added to this game yet.",
+        "rpg-publication-label": "Publication",
+        "rpg-resource-label": "Resource",
+        "rpg-files-label": "Files",
         "reading-lists-title": "{{side-nav.reading-lists}}",
         "pages-count": "{{num}} Pages",
         "words-count": "{{num}} Words",
@@ -2001,8 +2014,8 @@
         "manage-reading-list-tooltip": "Should Kavita create Reading Lists from StoryArc/StoryArcNumber and AlternativeSeries/AlternativeCount tags found within ComicInfo.xml/opf files",
         "allow-scrobbling-label": "Allow Scrobbling",
         "allow-scrobbling-tooltip": "Should Kavita scrobble reading events, want to read status, ratings, and reviews to configured providers. This will only occur if the server has an active Kavita+ Subscription.",
-        "allow-metadata-matching-label": "Allow Metadata Matching",
-        "allow-metadata-matching-tooltip": "Should Kavita download metadata for Series within this Library. This will only occur if the server has an active Kavita+ Subscription.",
+        "allow-metadata-matching-label": "Allow Kavita+ Metadata Matching",
+        "allow-metadata-matching-tooltip": "Allow Kavita+ to download series metadata for this library. This requires an active subscription and is separate from DriveThruRPG metadata.",
         "folder-watching-label": "Folder Watching",
         "folder-watching-tooltip": "Override Server folder watching for this library. If off, folder watching won't run on the folders this library contains. If libraries share folders, then folders may still be ran against. Will always wait 10 minutes before triggering scan.",
         "include-in-dashboard-label": "Include in Dashboard",
@@ -2011,8 +2024,12 @@
         "include-in-search-tooltip": "Should series and any derived information (genres, people, files) from the library be included in search results.",
         "enable-metadata-label": "Enable Metadata (ComicInfo/Epub/PDF)",
         "enable-metadata-tooltip": "Allow Kavita to read metadata files which override filename parsing.",
-        "metadata-provider-label": "Metadata Provider",
-        "metadata-provider-tooltip": "Select the source Kavita pulls metadata from.",
+        "enable-drivethrurpg-metadata-label": "Enable DriveThruRPG metadata",
+        "enable-drivethrurpg-metadata-tooltip": "Search for unique DriveThruRPG product-title matches for new and existing chapters. If Kavita+ matching is also enabled, both sources may update unlocked chapter fields; disable it if you want only DriveThruRPG.",
+        "enable-rpggeek-metadata-label": "Enable RPGGeek metadata",
+        "enable-rpggeek-metadata-tooltip": "Searches unique RPGGeek items for unlinked publications to fill gaps that DriveThruRPG does not cover. Requires BGG_API_TOKEN configured on the server. Results are cached to avoid repeated calls.",
+        "metadata-provider-label": "Kavita+ Metadata Provider",
+        "metadata-provider-tooltip": "Select the provider Kavita+ uses for metadata matching. This does not affect DriveThruRPG.",
         "remove-prefix-for-sortname-label": "Remove common prefixes for Sort Name",
         "remove-prefix-for-sortname-tooltip": "Kavita will remove common prefixes like 'The', 'A', 'An' from titles for sort name. Does not override set metadata.",
         "inherit-web-links-label": "Inherit web links from first chapter",
@@ -2248,6 +2265,7 @@
         "issue-num": "Issue #{{num}}",
         "chapter-num": "Chapter {{num}}",
         "book-num": "Book {{num}}",
+        "version-num": "Version {{num}}",
         "volume-num": "Volume {{num}}",
         "single-volume": "Single Volume",
 
@@ -2256,7 +2274,11 @@
         "issue-title": "Issue",
         "issue-title-plural": "Issues",
         "chapter-title": "Chapter",
-        "chapter-title-plural": "Chapters"
+        "chapter-title-plural": "Chapters",
+        "version-title": "Version",
+        "version-title-plural": "Versions",
+        "manual-title": "Manual",
+        "manual-title-plural": "Manuals"
     },
 
     "external-series-card": {
@@ -3551,6 +3573,8 @@
         "title-label": "Title",
         "sort-order-label": "Sort Order",
         "isbn-label": "ISBN",
+        "drivethrurpg-id-label": "DriveThruRPG Product ID",
+        "drivethrurpg-refresh-label": "Re-query DriveThruRPG",
         "release-date-label": "Release",
         "summary-label": "{{edit-series-modal.summary-label}}",
         "genres-label": "{{edit-series-modal.genres-label}}",
@@ -3609,6 +3633,25 @@
         "date-added-label": "{{edit-chapter-modal.date-added-label}}",
         "size-label": "{{edit-chapter-modal.size-label}}",
         "id-label": "{{edit-chapter-modal.id-label}}",
+        "drivethrurpg-id-label": "DriveThruRPG Product ID",
+        "drivethrurpg-refresh-label": "Re-query DriveThruRPG",
+        "title-label": "Title",
+        "summary-label": "Summary",
+        "release-date-label": "Release date",
+        "language-label": "Language",
+        "locked-label": "Locked",
+        "rpg-material-type-label": "RPG material type",
+        "material-type-0": "Unclassified",
+        "material-type-1": "Core manual",
+        "material-type-2": "Manual",
+        "material-type-3": "Adventure",
+        "material-type-4": "Supplement",
+        "material-type-5": "Other publication",
+        "material-type-6": "Map",
+        "material-type-7": "Character sheet",
+        "material-type-8": "Game aid",
+        "material-type-9": "Cards / tokens",
+        "material-type-10": "Other resource",
         "files-label": "{{edit-chapter-modal.files-label}}",
         "cover-image-description": "{{edit-series-modal.cover-image-description}}"
     },
@@ -4674,6 +4717,44 @@
       "hidden": "{{amount}} items hidden due to invalid state"
     },
 
+    "rpg-geek-metadata": {
+        "status-0": "Not searched",
+        "status-1": "Linked",
+        "status-2": "No match found",
+        "status-3": "Ambiguous results",
+        "status-4": "Lookup failed",
+        "last-checked": "Last checked:",
+        "search-label": "Search term",
+        "search-candidates": "Search",
+        "try-series": "Try the game name",
+        "refresh": "Re-query",
+        "link": "Link",
+        "manual-id-label": "RPGGeek item ID",
+        "no-candidates": "No candidate items found.",
+        "link-success": "Linked to RPGGeek. Metadata refresh queued.",
+        "refresh-queued": "Metadata refresh queued.",
+        "search-error": "Could not query RPGGeek."
+    },
+
+    "drive-thru-rpg-metadata": {
+        "status-0": "Not searched",
+        "status-1": "Linked",
+        "status-2": "No match found",
+        "status-3": "Ambiguous results",
+        "status-4": "Lookup failed",
+        "last-checked": "Last checked:",
+        "search-label": "Search term",
+        "search-candidates": "Search",
+        "try-series": "Try the game name",
+        "refresh": "Re-query",
+        "link": "Link",
+        "manual-id-label": "DriveThruRPG product ID",
+        "no-candidates": "No candidate products found.",
+        "link-success": "Linked to DriveThruRPG. Metadata refresh queued.",
+        "refresh-queued": "Metadata refresh queued.",
+        "search-error": "Could not query DriveThruRPG."
+    },
+
     "edit-external-metadata-form": {
         "aniListId-label": "AniList Id",
         "malId-label": "MAL Id",
@@ -4683,7 +4764,11 @@
         "metronId-label": "Metron Id",
         "cbrId-label": "Comic Book Roundup Id",
         "not-set-label": "Not set",
-        "isbn-label": "{{edit-chapter-modal.isbn-label}}"
+        "isbn-label": "{{edit-chapter-modal.isbn-label}}",
+        "drivethrurpg-id-label": "DriveThruRPG ID",
+        "drivethrurpg-not-linked": "Not linked",
+        "rpggeek-id-label": "RPGGeek ID",
+        "rpggeek-not-linked": "Not linked"
     },
 
     "run-metadata-mappings-modal": {

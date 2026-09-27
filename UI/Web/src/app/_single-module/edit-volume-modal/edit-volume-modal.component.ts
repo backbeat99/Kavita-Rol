@@ -1,4 +1,5 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, Input, OnInit, signal} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, inject, Input, OnInit, signal} from '@angular/core';
+import {NgClass} from '@angular/common';
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {NgbActiveModal} from "@ng-bootstrap/ng-bootstrap";
 import {TranslocoDirective} from "@jsverse/transloco";
@@ -25,7 +26,8 @@ import {DownloadService} from '../../shared/_services/download.service';
 import {DownloadEntityType} from '../../shared/_models/download-queue-item';
 import {LibraryType} from "../../_models/library/library";
 import {PersonRole} from "../../_models/metadata/person";
-import {concat} from "rxjs";
+import {concat, switchMap} from "rxjs";
+import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MangaFile} from "../../_models/manga-file";
 import {BreakpointService} from "../../_services/breakpoint.service";
 import {ActionFactoryService} from "../../_services/action-factory.service";
@@ -33,6 +35,7 @@ import {ActionItem} from "../../_models/actionables/action-item";
 import {Action} from "../../_models/actionables/action";
 import {modalDeleted, modalSaved} from "../../_models/modal/modal-result";
 import {VolumeService} from "../../_services/volume.service";
+import {LibraryService} from "../../_services/library.service";
 import {UpdateVolume} from "../../_models/update-volume";
 import {Tabs} from "../../_models/tabs";
 import {
@@ -42,12 +45,14 @@ import {
 import {EditModalShellComponent} from "../../shared/edit-modal-shell/edit-modal-shell.component";
 import {EditTabDirective} from "../../shared/_directive/edit-tab.directive";
 import {MangaFormat} from "../../_models/manga-format";
+import {RpgMaterialType} from "../../_models/library/rpg-material-type";
 
 
 @Component({
   selector: 'app-edit-volume-modal',
   imports: [
     FormsModule,
+    NgClass,
     TranslocoDirective,
     ReactiveFormsModule,
     SettingItemComponent,
@@ -69,6 +74,10 @@ import {MangaFormat} from "../../_models/manga-format";
 })
 export class EditVolumeModalComponent implements OnInit {
   public readonly modal = inject(NgbActiveModal);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly LibraryType = LibraryType;
+  protected readonly RpgMaterialType = RpgMaterialType;
+  protected readonly rpgMaterialOptions = Object.values(RpgMaterialType).filter(value => typeof value === 'number') as RpgMaterialType[];
   public readonly utilityService = inject(UtilityService);
   public readonly imageService = inject(ImageService);
   private readonly uploadService = inject(UploadService);
@@ -78,6 +87,7 @@ export class EditVolumeModalComponent implements OnInit {
   private readonly actionService = inject(ActionService);
   private readonly downloadService = inject(DownloadService);
   private readonly volumeService = inject(VolumeService);
+  private readonly libraryService = inject(LibraryService);
   protected readonly breakpointService = inject(BreakpointService);
   private readonly coverChooserConfigFactory = inject(CoverChooserConfigFactoryService);
 
@@ -92,6 +102,7 @@ export class EditVolumeModalComponent implements OnInit {
   coverImageReset = false;
   coverImageDirty = false;
   chooserConfig = signal<CoverImageChooserConfig>({});
+  enableDriveThruRpgMetadata = signal(false);
 
   tasks = this.actionFactoryService.getActionablesForSettingsPage(this.actionFactoryService.getVolumeActions(this.seriesId, this.libraryId, this.libraryType), this.blacklist);
   /**
@@ -115,11 +126,29 @@ export class EditVolumeModalComponent implements OnInit {
 
   ngOnInit() {
     this.initVolume = Object.assign({}, this.volume);
+    if (this.libraryType === LibraryType.Rpg && this.accountService.hasAdminRole()) {
+      this.libraryService.getLibrary(this.libraryId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(library => {
+        this.enableDriveThruRpgMetadata.set(library.enableDriveThruRpgMetadata ?? false);
+      });
+    }
 
     this.files = this.volume.chapters.flatMap(c => c.files);
     this.size = this.files.reduce((sum, v) => sum + v.bytes, 0);
 
     this.editForm.addControl('coverImageLocked', new FormControl(this.volume.coverImageLocked, []));
+    if (this.libraryType === LibraryType.Rpg) {
+      this.editForm.addControl('driveThruRpgId', new FormControl<number | null>(this.volume.driveThruRpgId ?? null));
+      this.editForm.addControl('rpgGeekId', new FormControl<number | null>(this.volume.rpgGeekId ?? null));
+      this.editForm.addControl('rpgMaterialType', new FormControl<RpgMaterialType>(this.volume.rpgMaterialType ?? RpgMaterialType.Unclassified));
+      this.editForm.addControl('name', new FormControl<string>(this.volume.name));
+      this.editForm.addControl('nameLocked', new FormControl<boolean>(this.volume.nameLocked ?? false));
+      this.editForm.addControl('summary', new FormControl<string>(this.volume.summary ?? ''));
+      this.editForm.addControl('summaryLocked', new FormControl<boolean>(this.volume.summaryLocked ?? false));
+      this.editForm.addControl('releaseDate', new FormControl<string>(this.volume.releaseDate ? this.volume.releaseDate.slice(0, 10) : ''));
+      this.editForm.addControl('releaseDateLocked', new FormControl<boolean>(this.volume.releaseDateLocked ?? false));
+      this.editForm.addControl('language', new FormControl<string>(this.volume.language ?? ''));
+      this.editForm.addControl('languageLocked', new FormControl<boolean>(this.volume.languageLocked ?? false));
+    }
     addMetadataIdControls(this.editForm, this.volume);
 
     this.chooserConfig.set(this.coverChooserConfigFactory.forVolume(this.volume, this.libraryType));
@@ -135,6 +164,21 @@ export class EditVolumeModalComponent implements OnInit {
 
   save() {
     const model = this.editForm.getRawValue();
+    if (this.libraryType === LibraryType.Rpg) {
+      const productId = Number(model.driveThruRpgId);
+      this.volume.driveThruRpgId = Number.isInteger(productId) && productId > 0 ? productId : null;
+      const rpgGeekId = Number(model.rpgGeekId);
+      this.volume.rpgGeekId = Number.isInteger(rpgGeekId) && rpgGeekId > 0 ? rpgGeekId : null;
+      this.volume.rpgMaterialType = model.rpgMaterialType as RpgMaterialType;
+      this.volume.name = model.name;
+      this.volume.nameLocked = model.nameLocked;
+      this.volume.summary = model.summary ?? '';
+      this.volume.summaryLocked = model.summaryLocked;
+      this.volume.releaseDate = model.releaseDate ? model.releaseDate + 'T00:00:00' : null;
+      this.volume.releaseDateLocked = model.releaseDateLocked;
+      this.volume.language = model.language ?? '';
+      this.volume.languageLocked = model.languageLocked;
+    }
 
     const updateData = {id: this.volume.id, ...model} as UpdateVolume;
 
@@ -152,6 +196,24 @@ export class EditVolumeModalComponent implements OnInit {
     });
   }
 
+
+  refreshDriveThruRpgMetadata() {
+    const productId = Number(this.editForm.get('driveThruRpgId')?.value);
+    this.volume.driveThruRpgId = Number.isInteger(productId) && productId > 0 ? productId : null;
+
+    const apis = [this.volumeService.updateVolume({id: this.volume.id, ...this.editForm.getRawValue()} as UpdateVolume)];
+    const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
+    if (this.coverImageDirty) {
+      apis.push(this.uploadService.updateVolumeCoverImage(this.volume.id, this.selectedCover, true));
+    }
+
+    concat(...apis).pipe(
+      switchMap(() => this.volumeService.refreshDriveThruRpgMetadata(this.volume.id)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.modal.close(modalSaved(this.volume, needsCoverUpdate));
+    });
+  }
 
   async runTask(action: ActionItem<Volume>) {
     switch (action.action) {

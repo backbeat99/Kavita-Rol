@@ -44,6 +44,12 @@ public sealed record UpdateLibraryDto
     /// <inheritdoc cref="Library.EnableMetadata"/>
     [Required]
     public bool EnableMetadata { get; init; }
+    /// <inheritdoc cref="Library.EnableDriveThruRpgMetadata"/>
+    /// <remarks>Null means the client did not manage this switch; leave it unchanged.</remarks>
+    public bool? EnableDriveThruRpgMetadata { get; init; }
+    /// <inheritdoc cref="Library.EnableRpgGeekMetadata"/>
+    /// <remarks>Null means the client did not manage this switch; leave it unchanged.</remarks>
+    public bool? EnableRpgGeekMetadata { get; init; }
     /// <inheritdoc cref="Library.RemovePrefixForSortName"/>
     [Required]
     public bool RemovePrefixForSortName { get; init; }

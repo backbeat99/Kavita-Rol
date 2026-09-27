@@ -78,10 +78,12 @@ public class LibraryController(
             .WithManageCollections(dto.ManageCollections)
             .WithManageReadingLists(dto.ManageReadingLists)
             .WithAllowScrobbling(dto.AllowScrobbling)
-            .WithAllowMetadataMatching(dto.AllowMetadataMatching)
+            .WithAllowMetadataMatching(dto.AllowMetadataMatching && dto.Type != LibraryType.Rpg)
             .WithEnableMetadata(dto.EnableMetadata)
             .WithMetadataProvider(dto.MetadataProvider)
             .Build();
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata ?? false;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata ?? false;
 
         library.LibraryFileTypes = dto.FileGroupTypes
             .Select(t => new LibraryFileTypeGroup() {FileTypeGroup = t, LibraryId = library.Id})
@@ -95,10 +97,10 @@ public class LibraryController(
         library.DefaultLanguage = dto.DefaultLanguage;
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
 
-        // Override Scrobbling for Comic libraries since there are no providers to scrobble to
-        if (library.Type == LibraryType.Comic)
+        // Override Scrobbling for library types that have no providers to scrobble to.
+        if (library.Type is LibraryType.Comic or LibraryType.Rpg)
         {
-            logger.LogInformation("Overrode Library {Name} to disable scrobbling since there are no providers for Comics", dto.Name.Sanitize());
+            logger.LogInformation("Overrode Library {Name} to disable scrobbling since there are no providers for its type", dto.Name.Sanitize());
             library.AllowScrobbling = false;
         }
 
@@ -415,8 +417,12 @@ public class LibraryController(
         if (sourceLibrary == null) return BadRequest("SourceLibraryId must exist");
 
         var libraries = await unitOfWork.LibraryRepository.GetLibraryForIdsAsync(dto.TargetLibraryIds, LibraryIncludes.ExcludePatterns | LibraryIncludes.FileTypes | LibraryIncludes.Folders, ct);
+        var librariesWithNewDriveThruRpgMetadata = new List<int>();
+        var librariesWithNewRpgGeekMetadata = new List<int>();
         foreach (var targetLibrary in libraries)
         {
+            var hadDriveThruRpgMetadataEnabled = targetLibrary.EnableDriveThruRpgMetadata;
+            var hadRpgGeekMetadataEnabled = targetLibrary.EnableRpgGeekMetadata;
             UpdateLibrarySettings(new UpdateLibraryDto
             {
                 Folders = targetLibrary.Folders.Select(s => s.Path),
@@ -426,6 +432,8 @@ public class LibraryController(
                 AllowScrobbling = sourceLibrary.AllowScrobbling,
                 AllowMetadataMatching = sourceLibrary.AllowMetadataMatching,
                 EnableMetadata = sourceLibrary.EnableMetadata,
+                EnableDriveThruRpgMetadata = sourceLibrary.EnableDriveThruRpgMetadata,
+                EnableRpgGeekMetadata = sourceLibrary.EnableRpgGeekMetadata,
                 RemovePrefixForSortName = sourceLibrary.RemovePrefixForSortName,
                 InheritWebLinksFromFirstChapter = sourceLibrary.InheritWebLinksFromFirstChapter,
                 DefaultLanguage = sourceLibrary.DefaultLanguage,
@@ -438,9 +446,30 @@ public class LibraryController(
                 IncludeInSearch = sourceLibrary.IncludeInSearch,
                 ManageReadingLists = sourceLibrary.ManageReadingLists,
             }, targetLibrary, dto.IncludeType);
+
+            if (!hadDriveThruRpgMetadataEnabled && targetLibrary.EnableDriveThruRpgMetadata)
+            {
+                librariesWithNewDriveThruRpgMetadata.Add(targetLibrary.Id);
+            }
+
+            if (!hadRpgGeekMetadataEnabled && targetLibrary.EnableRpgGeekMetadata)
+            {
+                librariesWithNewRpgGeekMetadata.Add(targetLibrary.Id);
+            }
         }
 
         await unitOfWork.CommitAsync(ct);
+        foreach (var libraryId in librariesWithNewDriveThruRpgMetadata)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedChaptersInLibraryAsync(libraryId, CancellationToken.None));
+        }
+
+        foreach (var libraryId in librariesWithNewRpgGeekMetadata)
+        {
+            BackgroundJob.Enqueue<IRpgGeekMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(libraryId, CancellationToken.None));
+        }
 
         if (sourceLibrary.FolderWatching)
         {
@@ -662,6 +691,8 @@ public class LibraryController(
             return BadRequest(await localizationService.TranslateAsync(userId, "library-name-exists"));
 
         var originalFoldersCount = library.Folders.Count;
+        var hadDriveThruRpgMetadataEnabled = library.EnableDriveThruRpgMetadata;
+        var hadRpgGeekMetadataEnabled = library.EnableRpgGeekMetadata;
 
         library.Name = newName;
         library.Folders = dto.Folders.Select(s => new FolderPath() {Path = s}).Distinct().ToList();
@@ -675,6 +706,18 @@ public class LibraryController(
         if (folderWatchingUpdate || originalFoldersCount != dto.Folders.Count() || typeUpdate)
         {
             BackgroundJob.Enqueue(() => libraryWatcher.RestartWatching());
+        }
+
+        if (!hadDriveThruRpgMetadataEnabled && library.EnableDriveThruRpgMetadata)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedChaptersInLibraryAsync(library.Id, CancellationToken.None));
+        }
+
+        if (!hadRpgGeekMetadataEnabled && library.EnableRpgGeekMetadata)
+        {
+            BackgroundJob.Enqueue<IRpgGeekMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(library.Id, CancellationToken.None));
         }
 
         if (originalFoldersCount != dto.Folders.Count() || typeUpdate)
@@ -746,9 +789,11 @@ public class LibraryController(
         library.IncludeInSearch = dto.IncludeInSearch;
         library.ManageCollections = dto.ManageCollections;
         library.ManageReadingLists = dto.ManageReadingLists;
-        library.AllowScrobbling = dto.AllowScrobbling;
-        library.AllowMetadataMatching = dto.AllowMetadataMatching;
+        library.AllowScrobbling = library.Type == LibraryType.Rpg ? false : dto.AllowScrobbling;
+        library.AllowMetadataMatching = library.Type == LibraryType.Rpg ? false : dto.AllowMetadataMatching;
         library.EnableMetadata = dto.EnableMetadata;
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata ?? library.EnableDriveThruRpgMetadata;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata ?? library.EnableRpgGeekMetadata;
         library.RemovePrefixForSortName = dto.RemovePrefixForSortName;
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
         library.DefaultLanguage = dto.DefaultLanguage;
@@ -769,6 +814,8 @@ public class LibraryController(
 
     private static void ValidateMetadataProvider(LibraryType type, MetadataProvider provider)
     {
+        // RPG has no Kavita+ metadata providers; DriveThruRPG is configured independently.
+        if (type == LibraryType.Rpg) return;
         if (!KavitaPlusConfiguration.IsValidMetadataProviderForLibraryType(type, provider))
         {
             throw new KavitaException("invalid-metadata-provider");

@@ -1,0 +1,74 @@
+<ng-container *transloco="let t; prefix: 'drive-thru-rpg-metadata'">
+  <div class="dtrpg-block">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="badge rounded-pill text-bg-secondary">{{statusLabel()}}</span>
+
+      @if (lastChecked(); as checked) {
+        <span class="small">{{t('last-checked')}} {{checked | utcToLocalTime:'short'}}</span>
+      }
+
+      @if (volume().driveThruRpgId; as id) {
+        <a class="btn-icon dark-exempt" target="_blank" rel="noopener noreferrer"
+           href="https://www.drivethrurpg.com/product/{{id}}">
+          DriveThruRPG #{{id}}
+          <i class="fa fa-external-link-alt ms-1" aria-hidden="true"></i>
+        </a>
+        @if (isAdmin() && providerEnabled()) {
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="refresh()" [disabled]="loading()">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="ms-1">{{t('refresh')}}</span>
+          </button>
+        }
+      } @else if (isAdmin() && providerEnabled()) {
+        <form class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap" (ngSubmit)="search()">
+          <label class="visually-hidden" for="dtrpg-query">{{t('search-label')}}</label>
+          <input id="dtrpg-query" type="text" class="form-control form-control-sm dtrpg-query-input"
+                 [(ngModel)]="searchQuery" name="searchQuery" [placeholder]="volume().name">
+          <button type="submit" class="btn btn-outline-primary btn-sm" [disabled]="loading() || !searchQuery().trim()">
+            <i class="fa fa-search" aria-hidden="true"></i>
+            <span class="ms-1">{{t('search-candidates')}}</span>
+          </button>
+          @if (seriesName().trim() && seriesName().trim() !== volume().name) {
+            <button type="button" class="btn btn-link btn-sm" [disabled]="loading()" (click)="searchBySeries()">
+              {{t('try-series')}}: {{seriesName()}}
+            </button>
+          }
+        </form>
+
+        <form class="d-flex align-items-center gap-2" (ngSubmit)="link(null)">
+          <label class="visually-hidden" for="dtrpg-manual-id">{{t('manual-id-label')}}</label>
+          <input id="dtrpg-manual-id" type="number" class="form-control form-control-sm dtrpg-id-input"
+                 [(ngModel)]="manualId" name="manualId" min="1" step="1"
+                 [placeholder]="t('manual-id-label')">
+          <button type="submit" class="btn btn-outline-secondary btn-sm" [disabled]="!manualId() || loading()">
+            {{t('link')}}
+          </button>
+        </form>
+      }
+    </div>
+
+    @if (searched()) {
+      @if (candidates().length === 0) {
+        <p class="small mt-2 mb-0">{{t('no-candidates')}}</p>
+      } @else {
+        <ul class="list-group mt-2 dtrpg-candidates">
+          @for (candidate of candidates(); track candidate.productId) {
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-2 py-2">
+              <span class="text-truncate">{{candidate.title}}</span>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <a class="btn-icon dark-exempt small" target="_blank" rel="noopener noreferrer"
+                   href="https://www.drivethrurpg.com/product/{{candidate.productId}}">
+                  #{{candidate.productId}}
+                </a>
+                <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="loading()"
+                        (click)="link(candidate.productId)">
+                  {{t('link')}}
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+</ng-container>

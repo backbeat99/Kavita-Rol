@@ -15,9 +15,9 @@ public static class SeriesHelper
     /// <param name="series"></param>
     /// <param name="parsedInfoKey"></param>
     /// <returns></returns>
-    public static bool FindSeries(Series series, ParsedSeries parsedInfoKey)
+    public static bool FindSeries(Series series, ParsedSeries parsedInfoKey, bool ignoreFormat = false)
     {
-        return series.MatchesParsedSeries(parsedInfoKey);
+        return series.MatchesParsedSeries(parsedInfoKey, ignoreFormat);
     }
 
     /// <summary>

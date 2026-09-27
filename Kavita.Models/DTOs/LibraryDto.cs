@@ -82,6 +82,10 @@ public sealed record LibraryDto : LiteLibraryDto
     /// Allow Kavita to read metadata (ComicInfo.xml, Epub, PDF)
     /// </summary>
     public bool EnableMetadata { get; set; } = true;
+    /// <inheritdoc cref="Library.EnableDriveThruRpgMetadata"/>
+    public bool EnableDriveThruRpgMetadata { get; set; }
+    /// <inheritdoc cref="Library.EnableRpgGeekMetadata"/>
+    public bool EnableRpgGeekMetadata { get; set; }
     /// <summary>
     /// Should Kavita remove sort articles "The" for the sort name
     /// </summary>

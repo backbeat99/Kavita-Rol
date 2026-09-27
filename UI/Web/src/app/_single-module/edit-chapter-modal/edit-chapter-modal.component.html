@@ -86,6 +86,25 @@
           </div>
         </div>
 
+        @if (enableDriveThruRpgMetadata() && libraryType !== LibraryType.Rpg) {
+          <div class="row align-items-end">
+            <div class="col-md-8 col-sm-12 mb-3">
+              @if (editForm.get('driveThruRpgId'); as formControl) {
+                <app-setting-item [title]="t('drivethrurpg-id-label')" [showEdit]="false" [toggleOnViewClick]="false" [control]="formControl">
+                  <ng-template #view>
+                    <input class="form-control" formControlName="driveThruRpgId" type="number" min="1" step="1" [appFormField]="formControl">
+                  </ng-template>
+                </app-setting-item>
+              }
+            </div>
+            <div class="col-md-4 col-sm-12 mb-3">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="refreshDriveThruRpgMetadata()">
+                {{t('drivethrurpg-refresh-label')}}
+              </button>
+            </div>
+          </div>
+        }
+
         <div class="row">
           <div class="col-lg-9 col-md-12">
             <div class="mb-3">
@@ -500,14 +519,14 @@
     }
 
     <!--External Metadata Ids-->
-    @if (accountService.hasAdminRole()) {
+    @if (accountService.hasAdminRole() && libraryType !== LibraryType.Rpg) {
       <ng-template [appEditTab]="Tabs.ExternalMetadataIds">
         <app-edit-external-metadata-form [form]="editForm" [entity]="chapter"/>
       </ng-template>
     }
 
-    <!-- Cover Tab -->
-    @if (accountService.hasAdminRole()) {
+    <!-- The RPG cover is shared by the Manual; edit it on the Manual instead. -->
+    @if (accountService.hasAdminRole() && libraryType !== LibraryType.Rpg) {
       <ng-template [appEditTab]="Tabs.CoverImage">
         <p class="alert alert-warning" role="alert">
           {{t('cover-image-description')}}

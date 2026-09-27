@@ -28,6 +28,8 @@ export class CoverImageComponent {
   coverImage = input.required<string>();
   entity = input.required<IHasProgress>();
   continueTitle = input<string>('');
+  showRead = input<boolean>(true);
+  showProgress = input<boolean>(true);
   readonly read = output();
 
   mobileSeriesImgBackground = getComputedStyle(this.document.documentElement)

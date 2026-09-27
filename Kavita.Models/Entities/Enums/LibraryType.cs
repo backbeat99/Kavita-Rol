@@ -35,4 +35,9 @@ public enum LibraryType
     /// </summary>
     [Description("Comic")]
     ComicVine = 5,
+    /// <summary>
+    /// Uses book-oriented parsing with RPG-specific presentation.
+    /// </summary>
+    [Description("RPG")]
+    Rpg = 6,
 }

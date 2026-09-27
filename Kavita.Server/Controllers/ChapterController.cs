@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Hangfire;
 using Kavita.API.Attributes;
 using Kavita.API.Database;
 using Kavita.API.Repositories;
@@ -20,6 +22,7 @@ using Kavita.Server.Helpers;
 using Kavita.Services.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Nager.ArticleNumber;
 
@@ -251,6 +254,7 @@ public class ChapterController(
         }
 
         ExternalMetadataIdHelper.SetExternalMetadataIds(chapter, dto);
+        chapter.DriveThruRpgId = dto.DriveThruRpgId is > 0 ? dto.DriveThruRpgId : null;
 
 
         #region Genres
@@ -417,6 +421,29 @@ public class ChapterController(
         return Ok();
     }
 
+
+    /// <summary>
+    /// Re-query DriveThruRPG metadata for a chapter using its explicit product ID, or a unique title match.
+    /// </summary>
+    [HttpPost("drivethrurpg/refresh")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult> RefreshDriveThruRpgMetadata([FromQuery] int chapterId)
+    {
+        var ct = HttpContext.RequestAborted;
+        var chapter = await unitOfWork.ChapterRepository.GetChapterAsync(chapterId, ChapterIncludes.Volumes, ct);
+        if (chapter == null)
+        {
+            return BadRequest(await localizationService.TranslateAsync(UserId, "chapter-doesnt-exist"));
+        }
+
+        var providerEnabled = await unitOfWork.DataContext.Chapter.AnyAsync(item => item.Id == chapterId &&
+            item.Volume.Series.Library.EnableDriveThruRpgMetadata && item.Volume.Series.Library.Type != LibraryType.Rpg, ct);
+        if (!providerEnabled) return BadRequest(await localizationService.TranslateAsync(UserId, "drivethrurpg-metadata-disabled"));
+
+        BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+            service.RefreshChapterAsync(chapterId, CancellationToken.None));
+        return Accepted();
+    }
 
     /// <summary>
     /// Returns Ratings and Reviews for an individual Chapter

@@ -10,10 +10,11 @@ export enum LibraryType {
     /**
      * Comic (Legacy)
      */
-    ComicVine = 5
+    ComicVine = 5,
+    Rpg = 6
 }
 
-export const allLibraryTypes = [LibraryType.Manga, LibraryType.ComicVine, LibraryType.Comic, LibraryType.Book, LibraryType.LightNovel, LibraryType.Images];
+export const allLibraryTypes = [LibraryType.Manga, LibraryType.ComicVine, LibraryType.Comic, LibraryType.Book, LibraryType.LightNovel, LibraryType.Images, LibraryType.Rpg];
 
 export interface LiteLibrary {
   id: number;
@@ -37,6 +38,8 @@ export interface Library extends LiteLibrary{
     allowScrobbling: boolean;
     allowMetadataMatching: boolean;
     enableMetadata: boolean;
+    enableDriveThruRpgMetadata: boolean;
+    enableRpgGeekMetadata: boolean;
     removePrefixForSortName: boolean;
     collapseSeriesRelationships: boolean;
     inheritWebLinksFromFirstChapter: boolean;

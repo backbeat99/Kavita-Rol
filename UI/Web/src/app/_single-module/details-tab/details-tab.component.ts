@@ -96,6 +96,16 @@ export class DetailsTabComponent {
   suppressEmptyGenres = input<boolean>(false);
   suppressEmptyTags = input<boolean>(false);
   individualWork = input<boolean>(false);
+  showDriveThruRpg = input<boolean>(false);
+  driveThruRpgId = computed(() => {
+    const entity = this.entity();
+    return entity && 'driveThruRpgId' in entity ? entity.driveThruRpgId ?? null : null;
+  });
+  showRpgGeek = input<boolean>(false);
+  rpgGeekId = computed(() => {
+    const entity = this.entity();
+    return entity && 'rpgGeekId' in entity ? entity.rpgGeekId ?? null : null;
+  });
   filePaths = input<string[]>([]);
   files = input<MangaFile[]>([]);
   basicMetadata = input<BasicMetadataInfo>();

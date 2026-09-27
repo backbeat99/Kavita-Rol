@@ -34,6 +34,9 @@ export interface BaseCardConfiguration<T> {
   /** Returns the router link for the title */
   titleRouteFunc: (entity: T) => string;
 
+  /** Optional action for titles that launch content directly instead of navigating to a detail route. */
+  titleClickFunc?: (entity: T, wrapper: CardEntity) => void;
+
   /** Returns the meta title text (area above the main title). Required as fallback. */
   metaTitleFunc: (entity: T, wrapper: CardEntity) => string;
 

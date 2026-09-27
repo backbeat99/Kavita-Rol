@@ -117,6 +117,7 @@ import {ImageService} from "../../../_services/image.service";
 import {NavService} from "../../../_services/nav.service";
 import {ReaderService} from "../../../_services/reader.service";
 import {Volume} from "../../../_models/volume";
+import {RpgMaterialType, RPG_PUBLICATION_TYPES, RPG_RESOURCE_TYPES} from "../../../_models/library/rpg-material-type";
 import {Chapter, LooseLeafOrDefaultNumber, SpecialVolumeNumber} from "../../../_models/chapter";
 import {LibraryType} from "../../../_models/library/library";
 import {SeriesMetadata} from "../../../_models/metadata/series-metadata";
@@ -201,6 +202,20 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
 
   volumes = signal<Volume[]>([]);
   volumeEntities = computed(() => this.volumes().map(v => CardEntityFactory.volume(v, this.seriesId(), this.libraryId())));
+  rpgCoreManualEntities = computed(() => this.volumes()
+    .filter(v => v.rpgMaterialType === RpgMaterialType.CoreManual)
+    .map(v => CardEntityFactory.volume(v, this.seriesId(), this.libraryId())));
+  rpgPublicationEntities = computed(() => this.volumes()
+    .filter(v => RPG_PUBLICATION_TYPES.includes(v.rpgMaterialType) && v.rpgMaterialType !== RpgMaterialType.CoreManual)
+    .map(v => CardEntityFactory.volume(v, this.seriesId(), this.libraryId())));
+  rpgResourceEntities = computed(() => this.volumes()
+    .filter(v => RPG_RESOURCE_TYPES.includes(v.rpgMaterialType))
+    .map(v => CardEntityFactory.volume(v, this.seriesId(), this.libraryId())));
+  rpgUnclassifiedEntities = computed(() => this.volumes()
+    .filter(v => v.rpgMaterialType === RpgMaterialType.Unclassified)
+    .map(v => CardEntityFactory.volume(v, this.seriesId(), this.libraryId())));
+  hasRpgMaterials = computed(() => this.rpgCoreManualEntities().length + this.rpgPublicationEntities().length
+    + this.rpgResourceEntities().length + this.rpgUnclassifiedEntities().length > 0);
   volumeConfig = computed(() => {
     const seriesId = this.seriesId();
     const libraryId = this.libraryId();
@@ -280,6 +295,9 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
         case LibraryType.LightNovel:
           chapterLocaleKey = 'common.book-num-shorthand';
           break;
+        case LibraryType.Rpg:
+          chapterLocaleKey = 'entity-title.version-num';
+          break;
         case LibraryType.Manga:
         case LibraryType.Images:
           chapterLocaleKey = 'common.chapter-num-shorthand';
@@ -336,9 +354,10 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
   totalCount = signal(0);
   seriesActions = computed(() => {
     const hasLicense = this.licenseService.hasActiveLicense();
+    const isRpg = this.libraryType() === LibraryType.Rpg;
     let actions = this.actionFactoryService.getSeriesActions()
       .filter(action => action.action !== Action.Edit);
-    if (!hasLicense) {
+    if (!hasLicense || isRpg) {
       actions = actions.filter(action => action.action !== Action.Match);
     }
     return actions;
@@ -375,7 +394,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
 
   readonly useBookLogic = computed(() => {
     const libType = this.libraryType();
-    return libType === LibraryType.Book || libType === LibraryType.LightNovel;
+    return libType === LibraryType.Book || libType === LibraryType.LightNovel || libType === LibraryType.Rpg;
   });
 
   readonly shouldShowStorylineTab = computed(() => {
@@ -385,6 +404,8 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
     if (libType === LibraryType.ComicVine) return false;
 
     // Edge case for bad pdf parse
+    if (libType === LibraryType.Rpg) return false;
+
     if ((libType === LibraryType.Book || libType === LibraryType.LightNovel) && (this.volumes().length === 0 && chapters.length === 0 && this.storylineChapters().length > 0)) return true;
 
     return (libType !== LibraryType.Book && libType !== LibraryType.LightNovel && libType !== LibraryType.Comic)
@@ -402,7 +423,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
 
     }
 
-    return this.volumes().length > 0;
+    return libType === LibraryType.Rpg || this.volumes().length > 0;
   });
 
   showDetailsTab = computed(() => {
@@ -679,7 +700,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
       this.volumes.set(detail.volumes);
       this.storylineChapters.set(detail.storylineChapters);
 
-      if (!this.router.url.includes('#')) {
+      if (!this.router.url.includes('#') || (this.libraryType() === LibraryType.Rpg && this.activeTabId === Tabs.Storyline)) {
         this.updateSelectedTab();
       } else if (this.activeTabId != Tabs.Storyline) {
         // Validate that the tab we are selected is still there (in case this comes from a messageHub)
@@ -794,7 +815,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
   updateSelectedTab() {
     const libType = this.libraryType();
     // Book libraries only have Volumes or Specials enabled
-    if (libType === LibraryType.Book || libType === LibraryType.LightNovel) {
+    if (libType === LibraryType.Book || libType === LibraryType.LightNovel || libType === LibraryType.Rpg) {
       if (this.volumes().length === 0) {
         if (this.specials().length === 0 && this.storylineChapters().length > 0) {
           // NOTE: This is an edge case caused by bad parsing of pdf files. Once the new pdf parser is in place, this should be removed

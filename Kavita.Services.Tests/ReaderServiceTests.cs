@@ -298,6 +298,33 @@ public class ReaderServiceTests(ITestOutputHelper testOutputHelper) : AbstractDb
     #region GetNextChapterIdAsync
 
     [Fact]
+    public async Task GetNextAndPreviousChapterIdAsync_DoNotAdvanceBetweenRpgManualVersions()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var readerService = Setup(unitOfWork);
+        var library = new LibraryBuilder("RPG Library", LibraryType.Rpg).Build();
+        context.Library.Add(library);
+        await context.SaveChangesAsync();
+
+        var pagesVersion = new ChapterBuilder(Parser.DefaultChapter, "PDF Pages.pdf").WithIsSpecial(true).Build();
+        var epubVersion = new ChapterBuilder(Parser.DefaultChapter, "EPUB.epub").WithIsSpecial(true).Build();
+        var manual = new VolumeBuilder("Manual")
+            .WithChapter(pagesVersion)
+            .WithChapter(epubVersion)
+            .Build();
+        var series = new SeriesBuilder("Game")
+            .WithLibraryId(library.Id)
+            .WithVolume(manual)
+            .Build();
+        context.Series.Add(series);
+        context.AppUser.Add(new AppUser {UserName = "rpg-reader"});
+        await context.SaveChangesAsync();
+
+        Assert.Equal(-1, await readerService.GetNextChapterIdAsync(series.Id, manual.Id, pagesVersion.Id, 1));
+        Assert.Equal(-1, await readerService.GetPrevChapterIdAsync(series.Id, manual.Id, epubVersion.Id, 1));
+    }
+
+    [Fact]
     public async Task GetNextChapterIdAsync_ShouldGetNextVolume()
     {
         // V1 -> V2

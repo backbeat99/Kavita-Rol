@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Hangfire;
 using Kavita.API.Database;
@@ -97,7 +98,7 @@ public class ProcessSeries(
             // by changing to a ToList() and if multiple, doing a firstInfo.FirstFolder/RootFolder type check
             series =
                 await unitOfWork.SeriesRepository.GetFullSeriesByAnyName(firstInfo.Series, firstInfo.LocalizedSeries,
-                    library.Id, firstInfo.Format);
+                    library.Id, firstInfo.Format, ignoreFormat: library.Type == LibraryType.Rpg);
         }
         catch (Exception ex)
         {
@@ -115,6 +116,8 @@ public class ProcessSeries(
         }
 
         if (series.LibraryId == 0) series.LibraryId = library.Id;
+        var existingVolumeIds = series.Volumes.Select(volume => volume.Id).ToHashSet();
+        var existingChapterIds = series.Volumes.SelectMany(volume => volume.Chapters).Select(chapter => chapter.Id).ToHashSet();
 
         try
         {
@@ -124,7 +127,7 @@ public class ProcessSeries(
             var firstParsedInfo = parsedInfos.FirstOrDefault(p => p.ComicInfo != null, firstInfo);
             var databasePeople = await LoadAndCreateMissingChapterPeople(series, parsedInfos);
 
-            await UpdateVolumes(databasePeople, settings, series, parsedInfos, args.ForceUpdate);
+            await UpdateVolumes(databasePeople, settings, series, parsedInfos, library.Type, args.ForceUpdate);
             series.Pages = series.Volumes.Sum(v => v.Pages);
 
             series.NormalizedName = series.Name.ToNormalized();
@@ -235,7 +238,7 @@ public class ProcessSeries(
             return null;
         }
 
-        if (seriesAdded && library.AllowMetadataMatching)
+        if (seriesAdded && library.AllowMetadataMatching && library.Type != LibraryType.Rpg)
         {
             // I think we can spawn this in a background job? Do we need to enqueue on a specific queue?
             // All changes to series after this should be page count etc
@@ -248,6 +251,54 @@ public class ProcessSeries(
 
         await eventHub.SendMessageAsync(MessageFactory.ScanSeries,
             MessageFactory.ScanSeriesEvent(series.LibraryId, series.Id, series.Name));
+
+        if (library.EnableDriveThruRpgMetadata)
+        {
+            if (library.Type == LibraryType.Rpg)
+            {
+                var newManualIds = series.Volumes
+                    .Where(volume => volume.Id > 0 && !existingVolumeIds.Contains(volume.Id))
+                    .Select(volume => volume.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (newManualIds.Count > 0)
+                {
+                    BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                        service.MatchUnmatchedVolumesAsync(newManualIds, CancellationToken.None));
+                }
+            }
+            else
+            {
+                var newChapterIds = series.Volumes
+                    .SelectMany(volume => volume.Chapters)
+                    .Where(chapter => chapter.Id > 0 && !existingChapterIds.Contains(chapter.Id))
+                    .Select(chapter => chapter.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (newChapterIds.Count > 0)
+                {
+                    BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                        service.MatchUnmatchedChaptersAsync(newChapterIds, CancellationToken.None));
+                }
+            }
+        }
+
+        if (library.EnableRpgGeekMetadata && library.Type == LibraryType.Rpg)
+        {
+            var newManualIds = series.Volumes
+                .Where(volume => volume.Id > 0 && !existingVolumeIds.Contains(volume.Id))
+                .Select(volume => volume.Id)
+                .Distinct()
+                .ToList();
+
+            if (newManualIds.Count > 0)
+            {
+                BackgroundJob.Enqueue<IRpgGeekMetadataService>(service =>
+                    service.MatchUnmatchedVolumesAsync(newManualIds, CancellationToken.None));
+            }
+        }
 
         return series.Id;
     }
@@ -671,17 +722,28 @@ public class ProcessSeries(
         }
     }
 
-    private async Task UpdateVolumes(Dictionary<string, Person> databasePeople, MetadataSettingsDto settings, Series series, IList<ParserInfo> parsedInfos, bool forceUpdate = false)
+    private async Task UpdateVolumes(Dictionary<string, Person> databasePeople, MetadataSettingsDto settings, Series series, IList<ParserInfo> parsedInfos, LibraryType libraryType, bool forceUpdate = false)
     {
-        // Add new volumes and update chapters per volume
-        var distinctVolumes = parsedInfos.DistinctVolumes();
+        // RPG libraries use the Volume level as a named Manual grouping rather than a numbered volume.
+        var isRpg = libraryType == LibraryType.Rpg;
+        var distinctVolumes = isRpg
+            ? parsedInfos.Select(p => p.Volumes).Distinct(StringComparer.OrdinalIgnoreCase).OrderByNatural(v => v).ToList()
+            : parsedInfos.DistinctVolumes();
+        if (isRpg)
+        {
+            RehomeRpgVersions(series, parsedInfos);
+            // Apply FK fixups before RemoveVolumes marks the former parent for cascade deletion.
+            unitOfWork.DataContext.ChangeTracker.DetectChanges();
+        }
         foreach (var volumeNumber in distinctVolumes)
         {
             Volume? volume;
             try
             {
                 // With the Name change to be formatted, Name no longer working because Name returns "1" and volumeNumber is "1.0", so we use LookupName as the original
-                volume = series.Volumes.SingleOrDefault(s => s.LookupName == volumeNumber);
+                volume = series.Volumes.SingleOrDefault(s => isRpg
+                    ? string.Equals(s.LookupName, volumeNumber, StringComparison.OrdinalIgnoreCase)
+                    : s.LookupName == volumeNumber);
             }
             catch (Exception ex)
             {
@@ -700,14 +762,28 @@ public class ProcessSeries(
             }
 
             volume.LookupName = volumeNumber;
-            volume.Name = volume.GetNumberTitle();
+            if (isRpg)
+            {
+                if (!volume.DriveThruRpgId.HasValue)
+                {
+                    volume.Name = volumeNumber;
+                }
+                volume.MinNumber = 0;
+                volume.MaxNumber = 0;
+            }
+            else
+            {
+                volume.Name = volume.GetNumberTitle();
+            }
 
             var minNumber = Parser.MinNumberFromRange(volumeNumber);
             var maxNumber = Parser.MaxNumberFromRange(volumeNumber);
-            var infos = parsedInfos
-                .Where(p => Parser.MinNumberFromRange(p.Volumes).Is(minNumber)
-                            && Parser.MaxNumberFromRange(p.Volumes).Is(maxNumber))
-                .ToArray();
+            var infos = isRpg
+                ? parsedInfos.Where(p => p.Volumes.Equals(volumeNumber, StringComparison.OrdinalIgnoreCase)).ToArray()
+                : parsedInfos
+                    .Where(p => Parser.MinNumberFromRange(p.Volumes).Is(minNumber)
+                                && Parser.MaxNumberFromRange(p.Volumes).Is(maxNumber))
+                    .ToArray();
 
             await UpdateChapters(new UpdateChapterArgs
             {
@@ -718,11 +794,54 @@ public class ProcessSeries(
                 DatabasePeople = databasePeople,
                 ForceUpdate = forceUpdate
             });
-            volume.Pages = volume.Chapters.Sum(c => c.Pages);
+            volume.Pages = isRpg
+                ? volume.Chapters.Select(chapter => chapter.Pages).DefaultIfEmpty(0).Max()
+                : volume.Chapters.Sum(chapter => chapter.Pages);
         }
 
         // Remove existing volumes that aren't in parsedInfos
         RemoveVolumes(series, parsedInfos);
+    }
+
+    internal static void RehomeRpgVersions(Series series, IList<ParserInfo> parsedInfos)
+    {
+        // Reassign existing one-file chapters before scanning any volume: otherwise an old volume
+        // processed first may delete them (and their per-version progress) before the new Manual exists.
+        foreach (var group in parsedInfos.GroupBy(info => info.Volumes, StringComparer.OrdinalIgnoreCase))
+        {
+            var target = series.Volumes.FirstOrDefault(volume =>
+                string.Equals(volume.LookupName, group.Key, StringComparison.OrdinalIgnoreCase));
+            if (target == null)
+            {
+                target = new VolumeBuilder(group.Key).WithSeriesId(series.Id).Build();
+                series.Volumes.Add(target);
+            }
+
+            var inheritedIds = new HashSet<int>();
+            foreach (var info in group)
+            {
+                var path = Parser.NormalizePath(info.FullFilePath);
+                var previous = series.Volumes
+                    .Where(volume => volume != target)
+                    .SelectMany(volume => volume.Chapters.Select(chapter => (Volume: volume, Chapter: chapter)))
+                    .FirstOrDefault(pair => pair.Chapter.Files.Count == 1 && pair.Chapter.Files.Any(file =>
+                        Parser.NormalizePath(file.FilePath) == path));
+                if (previous.Chapter == null) continue;
+
+                var oldId = previous.Chapter.DriveThruRpgId
+                            ?? (previous.Volume.Chapters.Count == 1 ? previous.Volume.DriveThruRpgId : null);
+                if (oldId is > 0) inheritedIds.Add(oldId.Value);
+
+                previous.Volume.Chapters.Remove(previous.Chapter);
+                target.Chapters.Add(previous.Chapter);
+                previous.Chapter.Volume = target;
+            }
+
+            if (!target.DriveThruRpgId.HasValue && inheritedIds.Count == 1)
+            {
+                target.DriveThruRpgId = inheritedIds.Single();
+            }
+        }
     }
 
     private void RemoveVolumes(Series series, IList<ParserInfo> parsedInfos)

@@ -22,6 +22,7 @@ public static class PlusMediaFormatExtensions
             LibraryType.Book => PlusMediaFormat.Book,
             LibraryType.Image => PlusMediaFormat.Manga,
             LibraryType.ComicVine => PlusMediaFormat.Comic,
+            LibraryType.Rpg => PlusMediaFormat.Book,
             _ => throw new ArgumentOutOfRangeException(nameof(libraryType), libraryType, null)
         };
     }

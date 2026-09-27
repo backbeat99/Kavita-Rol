@@ -20,6 +20,7 @@ import {CardConfigFactory} from "../../_services/card-config-factory.service";
 import {EntityCardComponent} from "../entity-card/entity-card.component";
 import {BulkSelectionEntityDataSource} from "../bulk-selection.service";
 import {ActionFactoryService} from "../../_services/action-factory.service";
+import {RpgMaterialType} from "../../_models/library/rpg-material-type";
 
 @Component({
   selector: 'app-chapter-card',
@@ -44,6 +45,7 @@ export class ChapterCardComponent implements OnChanges {
   seriesId = input.required<number>();
   chapter = input.required<Chapter>();
   libraryType = input.required<number>();
+  rpgMaterialType = input<RpgMaterialType>(RpgMaterialType.Unclassified);
 
   index = input<number>(0);
   maxIndex = input<number>(1);
@@ -90,6 +92,7 @@ export class ChapterCardComponent implements OnChanges {
       seriesId: this.seriesId(),
       libraryId: this.libraryId(),
       libraryType: this.libraryType(),
+      rpgMaterialType: this.rpgMaterialType(),
       overrides: {
         allowSelection: this.allowSelection(),
         actionableFunc: () => this.actions(),

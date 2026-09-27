@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using Hangfire;
 using Kavita.API.Database;
 using Kavita.API.Services;
 using Kavita.Common;
@@ -179,6 +180,36 @@ public class Program
 
             InitNetVips();
 
+            // Resume pending RPG metadata backfills for libraries that have the providers enabled.
+            // Jobs are cached server-side, so re-running after restarts costs nothing.
+            try
+            {
+                var backgroundJobs = services.GetRequiredService<IBackgroundJobClient>();
+                var providerLibraryIds = await unitOfWork.DataContext.Library
+                    .Where(library => library.EnableDriveThruRpgMetadata || library.EnableRpgGeekMetadata)
+                    .Select(library => new { library.Id, library.EnableDriveThruRpgMetadata, library.EnableRpgGeekMetadata })
+                    .ToListAsync();
+                foreach (var entry in providerLibraryIds)
+                {
+                    if (entry.EnableDriveThruRpgMetadata)
+                    {
+                        backgroundJobs.Enqueue<IDriveThruRpgMetadataService>(service =>
+                            service.MatchUnmatchedChaptersInLibraryAsync(entry.Id, CancellationToken.None));
+                    }
+
+                    if (entry.EnableRpgGeekMetadata)
+                    {
+                        backgroundJobs.Enqueue<IRpgGeekMetadataService>(service =>
+                            service.MatchUnmatchedVolumesInLibraryAsync(entry.Id, CancellationToken.None));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                var startupLogger = services.GetRequiredService<ILogger<Program>>();
+                startupLogger.LogWarning(ex, "Could not enqueue pending RPG metadata backfills");
+            }
+
             await host.RunAsync();
         } catch (Exception ex)
         {
@@ -251,7 +282,10 @@ public class Program
 
                 config.AddJsonFile("config/appsettings.json", optional: true, reloadOnChange: false)
                     .AddJsonFile($"config/appsettings.{env.EnvironmentName}.json",
-                        optional: true, reloadOnChange: false);
+                        optional: true, reloadOnChange: false)
+                    // Environment variables (e.g. BGG_API_TOKEN) are not present in appsettings
+                    // and must be read from the host environment.
+                    .AddEnvironmentVariables();
             })
             .ConfigureWebHostDefaults(webBuilder =>
             {

@@ -195,6 +195,7 @@ public class ChapterDto : IHasReadTimeEstimate, IHasCoverImage, IHasMetadataIds
     public string? ComicVineId { get; set; }
     public int MangaBakaId { get; set; }
     public int CbrId { get; set; }
+    public int? DriveThruRpgId { get; set; }
 
     #endregion
 }

@@ -140,6 +140,10 @@ public class Chapter : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasKP
     public string? ComicVineId { get; set; }
     public int MangaBakaId { get; set; }
     public int CbrId { get; set; }
+    /// <summary>
+    /// DriveThruRPG product identifier used by the native metadata provider.
+    /// </summary>
+    public int? DriveThruRpgId { get; set; }
 
     #endregion
 

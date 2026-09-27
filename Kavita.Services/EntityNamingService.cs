@@ -41,6 +41,11 @@ public partial class EntityNamingService : IEntityNamingService
     public string FormatChapterTitle(LibraryType libraryType, ChapterDto chapter,
         string? chapterLabel = null, string? issueLabel = null, string? bookLabel = null)
     {
+        if (libraryType == LibraryType.Rpg)
+        {
+            return chapter.Title ?? chapter.Range;
+        }
+
         var title = string.IsNullOrEmpty(chapter.TitleName) ? Parser.CleanSpecialTitle(chapter.Title) : chapter.TitleName;
         return FormatChapterTitle(libraryType, chapter.IsSpecial, chapter.Range, title,
             chapterLabel, issueLabel, bookLabel);
@@ -51,7 +56,7 @@ public partial class EntityNamingService : IEntityNamingService
     {
         if (isSpecial)
         {
-            return title!;
+            return title ?? string.Empty;
         }
 
         chapterLabel ??= DefaultChapterLabel;
@@ -66,6 +71,7 @@ public partial class EntityNamingService : IEntityNamingService
         var baseTitle = libraryType switch
         {
             LibraryType.Book => string.Format(bookLabel, title).Trim(),
+            LibraryType.Rpg => title ?? string.Empty,
             LibraryType.LightNovel => string.Format(bookLabel, range).Trim(),
             LibraryType.Comic or LibraryType.ComicVine => string.Format(issueLabel, hashMark, range).Trim(),
             LibraryType.Manga or LibraryType.Image => string.Format(chapterLabel, range).Trim(),
@@ -90,6 +96,11 @@ public partial class EntityNamingService : IEntityNamingService
 
         volumeLabel ??= DefaultVolumeLabel;
         ValidateFormatLabel(volumeLabel, nameof(volumeLabel));
+
+        if (libraryType == LibraryType.Rpg)
+        {
+            return volume.Name;
+        }
 
         if (libraryType is LibraryType.Book or LibraryType.LightNovel)
         {
@@ -241,6 +252,7 @@ public partial class EntityNamingService : IEntityNamingService
                 string.Format(issueLabel, DefaultHashMark, displayChapterNumber),
             LibraryType.Book or LibraryType.LightNovel =>
                 string.Format(bookLabel, displayChapterNumber),
+            LibraryType.Rpg => string.IsNullOrEmpty(chapterTitleName) ? string.Empty : chapterTitleName,
             _ => string.Format(chapterLabel, displayChapterNumber)
         };
     }
@@ -428,7 +440,7 @@ public partial class EntityNamingService : IEntityNamingService
         }
 
         // Books use title as the primary identifier
-        if (libraryType == LibraryType.Book)
+        if (libraryType is LibraryType.Book or LibraryType.Rpg)
         {
             return false;
         }

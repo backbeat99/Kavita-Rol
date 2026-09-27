@@ -20,7 +20,10 @@
       <div class="row mb-0 mb-xl-3 info-container">
         <div [ngClass]="mobileSeriesImgBackground === 'true' ? 'mobile-bg' : ''"
              class="image-container series col-5 col-sm-6 col-md-5 col-lg-5 col-xl-2 col-xxl-2 col-xxxl-2 d-none d-sm-block mb-3 position-relative">
-          <app-cover-image [entity]="seriesValue" [coverImage]="seriesCoverImageValue" [continueTitle]="continueReadingTitle()" (read)="read()" />
+          <app-cover-image [entity]="seriesValue" [coverImage]="seriesCoverImageValue" [continueTitle]="continueReadingTitle()"
+                           [showRead]="libraryTypeValue !== LibraryType.Rpg"
+                           [showProgress]="libraryTypeValue !== LibraryType.Rpg"
+                           (read)="read()" />
         </div>
 
         <div class="col-xl-10 col-lg-7 col-md-12 col-sm-12 col-xs-12">
@@ -44,7 +47,7 @@
           <app-metadata-detail-row [entity]="seriesMetadataValue"
                                    [readingTimeLeft]="readingTimeLeft()"
                                    [ageRating]="seriesMetadataValue.ageRating"
-                                   [hasReadingProgress]="hasReadingProgressValue"
+                                   [hasReadingProgress]="libraryTypeValue !== LibraryType.Rpg && hasReadingProgressValue"
                                    [readingTimeEntity]="seriesValue"
                                    [libraryType]="libraryTypeValue"
                                    [mangaFormat]="seriesValue.format"
@@ -53,17 +56,20 @@
                                    [totalReads]="seriesValue.totalReads"
           />
 
-          <div class="mt-2 mb-2">
-            <app-external-rating [seriesId]="seriesValue.id"
-                                 [ratings]="ratings()"
-                                 [userRating]="seriesValue.userRating"
-                                 [hasUserRated]="seriesValue.hasUserRated"
-                                 [libraryType]="libraryTypeValue"
-                                 [webLinks]="weblinksValue" />
-          </div>
+          @if (libraryTypeValue !== LibraryType.Rpg) {
+            <div class="mt-2 mb-2">
+              <app-external-rating [seriesId]="seriesValue.id"
+                                   [ratings]="ratings()"
+                                   [userRating]="seriesValue.userRating"
+                                   [hasUserRated]="seriesValue.hasUserRated"
+                                   [libraryType]="libraryTypeValue"
+                                   [webLinks]="weblinksValue" />
+            </div>
+          }
 
           <div class="mt-3 mb-3">
             <div class="row g-0" style="align-items: center;">
+              @if (libraryTypeValue !== LibraryType.Rpg) {
               <div class="col-auto">
                 <div class="btn-group">
                   <button type="button" class="btn btn-outline-primary" (click)="read()">
@@ -85,6 +91,7 @@
                   </div>
                 </div>
               </div>
+              }
 
               <div class="col-auto ms-2">
                 <button class="btn btn-actions" (click)="toggleWantToRead()" ngbTooltip="{{isWantToRead() ? t('remove-from-want-to-read') : t('add-to-want-to-read')}}">
@@ -253,25 +260,73 @@
           @if (shouldShowVolumeTabValue) {
             <li [ngbNavItem]="Tabs.Volumes">
               <a ngbNavLink>
-                {{(useBookLogicValue ? Tabs.Books : Tabs.Volumes) | tabTitle}}
+                {{libraryType() === LibraryType.Rpg ? t('rpg-publications-and-resources') : ((useBookLogicValue ? Tabs.Books : Tabs.Volumes) | tabTitle)}}
                 <span class="badge rounded-pill text-bg-secondary">{{volumes().length}}</span>
               </a>
               <ng-template ngbNavContent>
                 @defer (when activeTabId === Tabs.Volumes; prefetch on idle) {
-                  <virtual-scroller #scroll [items]="volumeEntities()" [parentScroll]="scrollingBlock" [childHeight]="1">
-                    <div class="card-container row g-0" #container>
-                      @for (item of scroll.viewPortItems; let idx = $index; track item.data.id + '_volumes') {
-                        <ng-container [ngTemplateOutlet]="nonChapterVolumeCard" [ngTemplateOutletContext]="{$implicit: item, scroll: scroll, idx: idx, totalLength: volumeEntities().length}" />
+                  @if (libraryType() === LibraryType.Rpg) {
+                    <div class="rpg-materials">
+                      @if (!hasRpgMaterials()) {
+                        <p class="text-muted">{{t('rpg-materials-empty')}}</p>
                       }
-                      <ng-container [ngTemplateOutlet]="estimatedNextCard" [ngTemplateOutletContext]="{tabId: Tabs.Volumes}" />
+                      @if (rpgCoreManualEntities().length > 0) {
+                        <section class="rpg-material-section">
+                          <h5>{{t('rpg-core-manual')}}</h5>
+                          <div class="card-container row g-0">
+                            @for (item of rpgCoreManualEntities(); track item.data.id) {
+                              <app-entity-card class="col-auto mt-2 mb-2" [entity]="item" [config]="volumeConfig()" [index]="$index" [maxIndex]="rpgCoreManualEntities().length" (dataChanged)="updateVolume($event)" />
+                            }
+                          </div>
+                        </section>
+                      }
+                      @if (rpgPublicationEntities().length > 0) {
+                        <section class="rpg-material-section">
+                          <h5>{{t('rpg-publications')}}</h5>
+                          <div class="card-container row g-0">
+                            @for (item of rpgPublicationEntities(); track item.data.id) {
+                              <app-entity-card class="col-auto mt-2 mb-2" [entity]="item" [config]="volumeConfig()" [index]="$index" [maxIndex]="rpgPublicationEntities().length" (dataChanged)="updateVolume($event)" />
+                            }
+                          </div>
+                        </section>
+                      }
+                      @if (rpgResourceEntities().length > 0) {
+                        <section class="rpg-material-section">
+                          <h5>{{t('rpg-resources')}}</h5>
+                          <div class="card-container row g-0">
+                            @for (item of rpgResourceEntities(); track item.data.id) {
+                              <app-entity-card class="col-auto mt-2 mb-2" [entity]="item" [config]="volumeConfig()" [index]="$index" [maxIndex]="rpgResourceEntities().length" (dataChanged)="updateVolume($event)" />
+                            }
+                          </div>
+                        </section>
+                      }
+                      @if (rpgUnclassifiedEntities().length > 0) {
+                        <section class="rpg-material-section">
+                          <h5>{{t('rpg-unclassified')}}</h5>
+                          <div class="card-container row g-0">
+                            @for (item of rpgUnclassifiedEntities(); track item.data.id) {
+                              <app-entity-card class="col-auto mt-2 mb-2" [entity]="item" [config]="volumeConfig()" [index]="$index" [maxIndex]="rpgUnclassifiedEntities().length" (dataChanged)="updateVolume($event)" />
+                            }
+                          </div>
+                        </section>
+                      }
                     </div>
-                  </virtual-scroller>
+                  } @else {
+                    <virtual-scroller #scroll [items]="volumeEntities()" [parentScroll]="scrollingBlock" [childHeight]="1">
+                      <div class="card-container row g-0" #container>
+                        @for (item of scroll.viewPortItems; let idx = $index; track item.data.id + '_volumes') {
+                          <ng-container [ngTemplateOutlet]="nonChapterVolumeCard" [ngTemplateOutletContext]="{$implicit: item, scroll: scroll, idx: idx, totalLength: volumeEntities().length}" />
+                        }
+                        <ng-container [ngTemplateOutlet]="estimatedNextCard" [ngTemplateOutletContext]="{tabId: Tabs.Volumes}" />
+                      </div>
+                    </virtual-scroller>
+                  }
                 }
               </ng-template>
             </li>
           }
 
-          @if (showChapterTab()) {
+          @if (showChapterTab() && libraryType() !== LibraryType.Rpg) {
             <li [ngbNavItem]="Tabs.Chapters">
               <a ngbNavLink>
                 {{chapterTabName()}}
