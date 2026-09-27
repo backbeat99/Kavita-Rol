@@ -91,6 +91,7 @@ import {ChapterCardComponent} from "../cards/chapter-card/chapter-card.component
 import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
 import {EntityTitleService} from "../_services/entity-title.service";
+import {RpgMaterialType} from "../_models/rpg/rpg-catalog";
 
 interface VolumeCast extends IHasCast {
   characterLocked: boolean;
@@ -200,6 +201,15 @@ export class VolumeDetailComponent implements OnInit {
   series = getResolvedData(this.route, 'series');
   library = getResolvedData(this.route, 'library');
   libraryType = computed(() => this.library().type);
+  isRpgLibrary = computed(() => this.libraryType() === LibraryType.Rpg);
+  isRpgPublication = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.CoreManual && this.volume().rpgMaterialType <= RpgMaterialType.OtherPublication);
+  isRpgResource = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.Map);
+  showRpgVersionPicker = computed(() => this.isRpgPublication() && this.volume().chapters.length > 0);
+  rpgSelectedChapterId = signal<number | null>(null);
+  rpgSelectedChapter = computed(() => {
+    const chapters = this.volume().chapters || [];
+    return chapters.find(chapter => chapter.id === this.rpgSelectedChapterId()) ?? chapters[0] ?? null;
+  });
 
   coverImage = computed(() => this.imageService.getVolumeCoverImage(this.volume().id));
 
@@ -352,6 +362,11 @@ export class VolumeDetailComponent implements OnInit {
 
 
   ngOnInit() {
+    if (this.isRpgLibrary()) {
+      const companionBar = this.document.querySelector<HTMLElement>('.companion-bar');
+      if (companionBar) companionBar.scrollTop = 0;
+    }
+
     this.mobileSeriesImgBackground = getComputedStyle(document.documentElement)
       .getPropertyValue('--mobile-series-img-background').trim();
 
@@ -444,8 +459,34 @@ export class VolumeDetailComponent implements OnInit {
 
   readVolume(incognitoMode: boolean = false) {
     if (!this.volume) return;
+    if (this.isRpgLibrary()) {
+      this.readSelectedRpgVersion(incognitoMode);
+      return;
+    }
 
     this.readerService.readVolume(this.libraryId(), this.seriesId(), this.volume(), incognitoMode);
+  }
+
+  selectRpgVersion(chapterId: number): void {
+    this.rpgSelectedChapterId.set(chapterId);
+  }
+
+  rpgVersionTitle(chapter: Chapter): string {
+    return chapter.titleName || chapter.title || chapter.files[0]?.filePath.split(/[\\/]/).pop() || chapter.range;
+  }
+
+  rpgFileName(path: string): string {
+    return path.split(/[\\/]/).pop() || path;
+  }
+
+  rpgFileExtension(path: string): string {
+    return path.split('.').pop()?.toUpperCase() || '';
+  }
+
+  readSelectedRpgVersion(incognitoMode: boolean = false): void {
+    const chapter = this.rpgSelectedChapter();
+    if (!chapter) return;
+    this.readerService.readChapter(this.libraryId(), this.seriesId(), chapter, incognitoMode);
   }
 
   openEditModal() {

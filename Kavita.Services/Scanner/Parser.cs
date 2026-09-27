@@ -879,7 +879,7 @@ public static partial class Parser
         {
             LibraryType.Manga => ParseMangaSeries(filename),
             LibraryType.Comic => ParseComicSeries(filename),
-            LibraryType.Book => ParseMangaSeries(filename),
+            LibraryType.Book or LibraryType.Rpg => ParseMangaSeries(filename),
             LibraryType.Image => ParseMangaSeries(filename),
             LibraryType.LightNovel => ParseMangaSeries(filename),
             LibraryType.ComicVine => ParseComicSeries(filename),
@@ -893,7 +893,7 @@ public static partial class Parser
         {
             LibraryType.Manga => ParseMangaVolume(filename),
             LibraryType.Comic => ParseComicVolume(filename),
-            LibraryType.Book => ParseMangaVolume(filename),
+            LibraryType.Book or LibraryType.Rpg => ParseMangaVolume(filename),
             LibraryType.Image => ParseMangaVolume(filename),
             LibraryType.LightNovel => ParseMangaVolume(filename),
             LibraryType.ComicVine => ParseComicVolume(filename),
@@ -907,7 +907,7 @@ public static partial class Parser
         {
             LibraryType.Manga => ParseMangaChapter(filename),
             LibraryType.Comic => ParseComicChapter(filename),
-            LibraryType.Book => ParseMangaChapter(filename),
+            LibraryType.Book or LibraryType.Rpg => ParseMangaChapter(filename),
             LibraryType.Image => ParseMangaChapter(filename),
             LibraryType.LightNovel => ParseMangaChapter(filename),
             LibraryType.ComicVine => ParseComicChapter(filename),

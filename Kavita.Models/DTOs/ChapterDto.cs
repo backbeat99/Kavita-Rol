@@ -94,6 +94,9 @@ public class ChapterDto : IHasReadTimeEstimate, IHasCoverImage, IHasMetadataIds
     public string WebLinks { get; set; }
     /// <inheritdoc cref="Chapter.ISBN"/>
     public string ISBN { get; set; }
+    public int? DriveThruRpgId { get; set; }
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; }
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
 
     #region Metadata
 

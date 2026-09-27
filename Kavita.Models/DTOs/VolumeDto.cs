@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Interfaces;
 
 namespace Kavita.Models.DTOs;
@@ -66,6 +67,23 @@ public sealed record VolumeDto : IHasReadTimeEstimate, IHasCoverImage, IHasMetad
     public int CbrId { get; set; }
 
     #endregion
+
+    public RpgMaterialType RpgMaterialType { get; set; }
+    public string Summary { get; set; } = string.Empty;
+    public bool NameLocked { get; set; }
+    public bool SummaryLocked { get; set; }
+    public int? RpgPublicationYear { get; set; }
+    public bool RpgPublicationYearLocked { get; set; }
+    public IList<string> RpgWriters { get; set; } = new List<string>();
+    public bool RpgWritersLocked { get; set; }
+    public IList<string> RpgPublishers { get; set; } = new List<string>();
+    public bool RpgPublishersLocked { get; set; }
+    public int? RpgGeekId { get; set; }
+    public RpgGeekMatchStatus RpgGeekMatchStatus { get; set; }
+    public DateTime? RpgGeekLastCheckedUtc { get; set; }
+    public int? DriveThruRpgId { get; set; }
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; }
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
 
     public void ResetColorScape()
     {

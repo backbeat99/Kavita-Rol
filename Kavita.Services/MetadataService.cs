@@ -164,6 +164,19 @@ public class MetadataService(
     {
         if (series == null) return;
 
+        if (series.Library?.Type == LibraryType.Rpg)
+        {
+            if (series.CoverImageLocked) return;
+
+            var coreManuals = series.Volumes
+                .Where(volume => volume.RpgMaterialType == RpgMaterialType.CoreManual)
+                .ToList();
+            series.CoverImage = coreManuals.Count == 1 ? coreManuals[0].CoverImage : null;
+            imageService.UpdateColorScape(series);
+            _updateEvents.Add(MessageFactory.CoverUpdateEvent(series.Id, MessageFactoryEntityTypes.Series));
+            return;
+        }
+
         if (!cacheHelper.ShouldUpdateCoverImage(
                 directoryService.FileSystem.Path.Join(directoryService.CoverImageDirectory, series.CoverImage),
                 null, series.Created, forceUpdate, series.CoverImageLocked))

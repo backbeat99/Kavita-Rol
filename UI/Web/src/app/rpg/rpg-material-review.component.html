@@ -1,0 +1,156 @@
+<main class="rpg-review" *transloco="let t; prefix: 'rpg-review'">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a routerLink="/library/{{library().id}}">{{library().name}}</a>
+    <span aria-hidden="true">/</span>
+    <a routerLink="/library/{{library().id}}/series/{{series().id}}">{{series().name}}</a>
+    <span aria-hidden="true">/</span>
+    <span>{{t('title')}}</span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <h1>{{t('title')}}</h1>
+      <p>{{t('intro')}}</p>
+    </div>
+    <div class="head-actions">
+      @if (library().enableRpgGeekMetadata) {
+        <a class="button" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-geek-review']">{{t('review-geek-batch')}}</a>
+      }
+      <a class="button secondary" routerLink="/library/{{library().id}}/series/{{series().id}}">{{t('back-to-game')}}</a>
+    </div>
+  </header>
+
+  <ol class="steps" [attr.aria-label]="t('review-steps')">
+    <li class="current" aria-current="step"><span>{{t('step-classification')}}</span></li>
+    <li><a [routerLink]="['/library', library().id, 'series', series().id, 'rpg-geek-review']">{{t('step-candidates')}}</a></li>
+  </ol>
+
+  <div class="summary-strip" aria-live="polite">
+    <span>{{publicationCount()}} {{t('publications')}}</span>
+    <span>{{resourceCount()}} {{t('resources')}}</span>
+    <span class="needs-review">{{unclassifiedCount()}} {{t('unclassified')}}</span>
+    <span class="reader-note">{{t('reader-remains-available')}}</span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading" role="status"><span class="loading-mark"></span>{{t('loading')}}</div>
+  } @else {
+    <div class="review-grid">
+      <section class="catalog">
+        @if (isAdmin()) {
+          <div class="bulk-toolbar">
+            <label class="select-all">
+              <input type="checkbox" [checked]="selectedIds().length === volumes().length && volumes().length > 0" (change)="selectAll($any($event.target).checked)">
+              <span>{{t('selected-count', {count: selectedIds().length})}}</span>
+            </label>
+            <select [value]="bulkType()" (change)="setBulkType($any($event.target).value)" [attr.aria-label]="t('bulk-type')">
+              @for (type of typeOptions; track type) {
+                <option [value]="type">{{t('types.' + type)}}</option>
+              }
+            </select>
+            <button class="button small" type="button" [disabled]="selectedIds().length === 0" (click)="applyBulkType()">{{t('assign-type')}}</button>
+            <button class="button small quiet" type="button" [disabled]="selectedIds().length === 0" (click)="selectAll(false)">{{t('clear-selection')}}</button>
+          </div>
+        }
+
+        @if (unclassified().length > 0) {
+          <section class="item-group">
+            <h2>{{t('group-unclassified')}} <span>{{unclassified().length}}</span></h2>
+            @for (volume of unclassified(); track volume.id) {
+              <ng-container [ngTemplateOutlet]="reviewRow" [ngTemplateOutletContext]="{$implicit: volume}" />
+            }
+          </section>
+        }
+
+        @if (publications().length > 0) {
+          <section class="item-group">
+            <h2>{{t('group-publications')}} <span>{{publications().length}}</span></h2>
+            @for (volume of publications(); track volume.id) {
+              <ng-container [ngTemplateOutlet]="reviewRow" [ngTemplateOutletContext]="{$implicit: volume}" />
+            }
+          </section>
+        }
+
+        @if (resources().length > 0) {
+          <section class="item-group">
+            <h2>{{t('group-resources')}} <span>{{resources().length}}</span></h2>
+            @for (volume of resources(); track volume.id) {
+              <ng-container [ngTemplateOutlet]="reviewRow" [ngTemplateOutletContext]="{$implicit: volume}" />
+            }
+          </section>
+        }
+
+        @if (volumes().length === 0) {
+          <div class="empty-state">
+            <h2>{{t('empty-title')}}</h2>
+            <p>{{t('empty-body')}}</p>
+          </div>
+        }
+
+        <ng-template #reviewRow let-volume>
+          <article class="review-row">
+            @if (isAdmin()) {
+              <input class="row-check" type="checkbox" [checked]="selectedIds().includes(volume.id)" (change)="toggleSelection(volume.id, $any($event.target).checked)" [attr.aria-label]="t('select-item', {name: volume.name})">
+            }
+            <a class="item-cover" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]" [attr.aria-label]="t('open-item', {name: volume.name})">
+              <img [src]="imageService.getVolumeCoverImage(volume.id)" [alt]="t('cover-alt', {name: volume.name})">
+            </a>
+            <div class="item-main">
+              <a class="item-title" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{volume.name}}</a>
+              <div class="item-subtitle">{{t('files-count', {count: fileNames(volume).length})}}</div>
+              <div class="file-list">
+                @for (fileName of fileNames(volume); track $index) {
+                  <span class="file-chip">{{fileName}}</span>
+                }
+              </div>
+            </div>
+            <div class="type-control">
+              <label [for]="'material-' + volume.id">{{t('material-type')}}</label>
+              <select [id]="'material-' + volume.id" [ngModel]="typeFor(volume)" (ngModelChange)="setType(volume.id, $event)" [ngModelOptions]="{standalone: true}" [disabled]="!isAdmin()">
+                @for (type of typeOptions; track type) {
+                  <option [ngValue]="type">{{t('types.' + type)}}</option>
+                }
+              </select>
+            </div>
+            <div class="provider-state">
+              @if (typeFor(volume) >= RpgMaterialType.CoreManual && typeFor(volume) <= RpgMaterialType.OtherPublication) {
+                <span class="state-label" [class.pending]="volume.rpgGeekMatchStatus === 1" [class.failed]="volume.rpgGeekMatchStatus === 5">{{t('provider-status.' + volume.rpgGeekMatchStatus)}}</span>
+                <small>{{volume.rpgGeekId ? t('linked-id', {id: volume.rpgGeekId}) : t('rpggeek-provider')}}</small>
+              } @else if (typeFor(volume) >= RpgMaterialType.Map) {
+                <span class="state-label quiet-state">{{t('not-searched')}}</span>
+                <small>{{t('resource-never-searched')}}</small>
+              } @else {
+                <span class="state-label quiet-state">{{t('not-classified')}}</span>
+                <small>{{t('search-after-classification')}}</small>
+              }
+            </div>
+            <a class="open-link" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">
+              {{typeFor(volume) >= RpgMaterialType.Map ? t('open-resource') : t('open-publication')}} <span aria-hidden="true">→</span>
+            </a>
+          </article>
+        </ng-template>
+
+        @if (isAdmin()) {
+          <footer class="save-bar">
+            <span>{{t('save-note')}}</span>
+            <button class="button primary" type="button" [disabled]="isSaving() || !hasDraftChanges()" (click)="save()">
+              @if (isSaving()) { <span class="button-spinner" aria-hidden="true"></span> }
+              {{isSaving() ? t('saving') : t('save-classification')}}
+            </button>
+          </footer>
+        }
+      </section>
+
+      <aside class="guide-panel">
+        <h2>{{t('after-title')}}</h2>
+        <ol>
+          <li><strong>{{t('after-1-title')}}</strong><span>{{t('after-1-body')}}</span></li>
+          <li><strong>{{t('after-2-title')}}</strong><span>{{t('after-2-body')}}</span></li>
+          <li><strong>{{t('after-3-title')}}</strong><span>{{t('after-3-body')}}</span></li>
+        </ol>
+        <div class="inline-note"><span class="info-mark" aria-hidden="true">i</span><span>{{t('version-note')}}</span></div>
+        <p class="aside-foot">{{t('reader-remains-available')}}</p>
+      </aside>
+    </div>
+  }
+</main>

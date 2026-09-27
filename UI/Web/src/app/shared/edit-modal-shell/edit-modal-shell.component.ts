@@ -42,6 +42,7 @@ export class EditModalShellComponent {
   // eslint-disable-next-line @angular-eslint/no-input-rename
   modalTitle = input.required<string>({ alias: 'title' });
   formGroup = input.required<FormGroup>();
+  saving = input(false);
 
   activeTabId = model<Tabs>();
 

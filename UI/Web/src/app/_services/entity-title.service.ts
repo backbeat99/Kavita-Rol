@@ -63,6 +63,8 @@ export class EntityTitleService {
       case LibraryType.Comic:
       case LibraryType.ComicVine:
         return this.translocoService.translate('entity-title.issue-title' + pluralKeyPart);
+      case LibraryType.Rpg:
+        return this.translocoService.translate('entity-title.version-title' + pluralKeyPart);
       case LibraryType.Images:
       case LibraryType.Manga:
         return this.translocoService.translate('entity-title.chapter-title' + pluralKeyPart);
@@ -123,6 +125,9 @@ export class EntityTitleService {
         return this.calculateImageRenderText(isChapter, number, volumeTitle, fallbackToVolume);
       case LibraryType.LightNovel:
         return this.calculateLightNovelRenderText(titleName, prioritizeTitleName, fallbackToVolume, isChapter, number, volumeTitle);
+      case LibraryType.Rpg:
+        if (!isChapter) return (entity as Volume).name || '';
+        return titleName || (entity as Chapter).title || (entity as Chapter).range || '';
       default:
         return '';
     }

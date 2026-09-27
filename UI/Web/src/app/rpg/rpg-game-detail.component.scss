@@ -1,0 +1,435 @@
+:host {
+  display: block;
+}
+
+.rpg-game-detail {
+  --rpg-line: color-mix(in srgb, var(--body-text-color) 18%, transparent);
+  --rpg-muted: color-mix(in srgb, var(--body-text-color) 72%, var(--bs-body-bg));
+  width: min(100%, 77.5rem);
+  margin-inline: auto;
+  padding: 2rem 2.625rem 4.375rem;
+  color: var(--body-text-color);
+}
+
+.game-crumb {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.125rem;
+  color: var(--rpg-muted);
+  font-size: 0.875rem;
+}
+
+.game-crumb a,
+.section-heading a,
+.details-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+
+.game-crumb a:hover,
+.section-heading a:hover,
+.details-link:hover {
+  text-decoration: underline;
+}
+
+.game-intro {
+  display: flex;
+  align-items: center;
+  gap: 1.375rem;
+  min-height: 8.25rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--rpg-line);
+}
+
+.game-cover {
+  width: 5.25rem;
+  height: 7.25rem;
+  flex: 0 0 auto;
+  border-radius: 0.2rem;
+  background: var(--elevation-layer3-dark-solid);
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--primary-color);
+  font-size: 1.6rem;
+}
+
+.game-heading {
+  min-width: 0;
+}
+
+.game-heading h1 {
+  margin: 0 0 0.45rem;
+  font-size: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.game-heading p {
+  margin: 0;
+  color: var(--rpg-muted);
+  font-size: 1rem;
+}
+
+.game-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-left: auto;
+}
+
+.review-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.125rem;
+  padding: 0.875rem 1.125rem;
+  margin-bottom: 1.625rem;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 34%, transparent);
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--elevation-layer2-dark-solid));
+  line-height: 1.5;
+}
+
+.review-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.875rem;
+  min-width: 0;
+}
+
+.review-copy strong { font-weight: 650; }
+.review-copy > span { flex-basis: 100%; color: var(--rpg-muted); font-size: 0.875rem; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.review-actions .btn { flex: 0 0 auto; }
+
+.game-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(15rem, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-heading h2,
+.unclassified-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.section-heading > a {
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+}
+
+.count {
+  display: inline-grid;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  padding-inline: 0.35rem;
+  border-radius: 999px;
+  background: var(--elevation-layer3-dark-solid);
+  color: var(--rpg-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.publication-list,
+.resource-list {
+  border-top: 1px solid var(--rpg-line);
+}
+
+.publication-row,
+.resource-row,
+.unclassified-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 5.125rem;
+  padding: 0.75rem 0.125rem;
+  border-bottom: 1px solid var(--rpg-line);
+}
+
+.publication-row.featured {
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  min-height: 7.5rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.375rem;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, var(--rpg-line));
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--elevation-layer2-dark-solid));
+}
+
+.item-cover {
+  display: block;
+  width: 3rem;
+  height: 4.125rem;
+  border-radius: 0.15rem;
+  background: var(--elevation-layer3-dark-solid);
+  object-fit: cover;
+}
+
+.publication-row.featured .item-cover {
+  width: 4rem;
+  height: 5.5rem;
+}
+
+.item-main {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.item-title,
+.unclassified-row .item-main {
+  overflow: hidden;
+  color: var(--body-text-color);
+  font-size: 1rem;
+  font-weight: 640;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.item-title:hover,
+.unclassified-row .item-main:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.item-meta {
+  overflow: hidden;
+  color: var(--rpg-muted);
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.publication-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.publication-actions .btn,
+.resource-row .btn,
+.unclassified-row .btn {
+  min-width: 3.75rem;
+}
+
+.details-link {
+  padding: 0.35rem 0;
+  color: var(--rpg-muted);
+  font-size: 0.875rem;
+}
+
+.resource-section {
+  min-width: 0;
+  padding-inline-start: 1.875rem;
+  border-inline-start: 1px solid var(--rpg-line);
+}
+
+.resource-row {
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  min-height: 5.75rem;
+  gap: 0.8125rem;
+}
+
+.resource-row .item-cover {
+  width: 2.5rem;
+  height: 3.4375rem;
+}
+
+.unclassified-section {
+  padding: 0.875rem 1rem;
+  margin: 0 0 1.625rem;
+  border: 1px solid color-mix(in srgb, var(--warning-color) 38%, var(--rpg-line));
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--warning-color) 7%, var(--elevation-layer2-dark-solid));
+}
+
+.unclassified-section h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.unclassified-row {
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  min-height: 4rem;
+  padding: 0.5rem 0;
+  border-bottom: 0;
+}
+
+.unclassified-row .item-cover {
+  width: 2.5rem;
+  height: 3.4375rem;
+}
+
+.empty-section {
+  margin: 0;
+  padding: 1rem 0;
+  color: var(--rpg-muted);
+  font-size: 0.9375rem;
+}
+
+.rpg-game-detail a:focus-visible,
+.rpg-game-detail button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
+@media (max-width: 940px) {
+  .game-columns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.625rem;
+  }
+
+  .resource-section {
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--rpg-line);
+    border-inline-start: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .rpg-game-detail {
+    padding: 1.1875rem 1.0625rem 2.8125rem;
+  }
+
+  .game-crumb {
+    margin-bottom: 0.875rem;
+  }
+
+  .game-intro {
+    display: grid;
+    grid-template-columns: 3.625rem minmax(0, 1fr);
+    gap: 0.875rem;
+    min-height: 0;
+    padding-bottom: 1.125rem;
+    margin-bottom: 1.125rem;
+  }
+
+  .game-cover {
+    width: 3.625rem;
+    height: 5.125rem;
+    grid-row: 1;
+  }
+
+  .game-heading h1 {
+    font-size: 1.625rem;
+  }
+
+  .game-heading p {
+    font-size: 0.8125rem;
+  }
+
+  .game-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0;
+  }
+
+  .game-actions .btn {
+    flex: 1 1 0;
+    padding-inline: 0.55rem;
+  }
+
+  .review-strip {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.8125rem 0.875rem;
+    margin-bottom: 1.375rem;
+  }
+
+  .review-actions { flex-direction: column; }
+  .review-actions .btn { width: 100%; }
+
+
+  .game-columns {
+    gap: 1.5rem;
+  }
+
+  .section-heading h2 {
+    font-size: 1.25rem;
+  }
+
+  .section-heading > a {
+    font-size: 0.8125rem;
+  }
+
+  .publication-row,
+  .publication-row.featured {
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    gap: 0.6875rem;
+    padding: 0.75rem 0.125rem;
+    border-radius: 0;
+  }
+
+  .publication-row.featured {
+    grid-template-columns: 3.625rem minmax(0, 1fr);
+    padding: 0.75rem;
+    margin-bottom: 0.375rem;
+    border-radius: 0.4rem;
+  }
+
+  .publication-row .item-cover {
+    width: 2.5rem;
+    height: 3.4375rem;
+  }
+
+  .publication-row.featured .item-cover {
+    width: 3.625rem;
+    height: 5.0625rem;
+  }
+
+  .publication-actions {
+    grid-column: 2;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .resource-row,
+  .unclassified-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    gap: 0.6875rem;
+  }
+
+  .resource-row .btn,
+  .unclassified-row .btn {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 3.5rem;
+    padding-inline: 0.65rem;
+  }
+
+  .resource-row .item-main,
+  .unclassified-row .item-main {
+    grid-column: 2;
+  }
+}

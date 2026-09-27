@@ -107,7 +107,7 @@ public interface ISeriesRepository
     Task<Series?> GetSeriesThatContainsLowestFolderPathAsync(string path, SeriesIncludes includes = SeriesIncludes.None, CancellationToken ct = default);
     Task<IEnumerable<Series>> GetAllSeriesByNameAsync(IList<string> normalizedNames,
         int userId, SeriesIncludes includes = SeriesIncludes.None, CancellationToken ct = default);
-    Task<Series?> GetFullSeriesByAnyName(string seriesName, string localizedName, int libraryId, MangaFormat format, bool withFullIncludes = true, CancellationToken ct = default);
+    Task<Series?> GetFullSeriesByAnyName(string seriesName, string localizedName, int libraryId, MangaFormat format, bool withFullIncludes = true, CancellationToken ct = default, bool ignoreFormat = false);
     /// <summary>
     /// Is the given normalized name free to use for a Series in this library+format? Checks against
     /// every other series' NormalizedName, NormalizedLocalizedName and normalized OriginalName - the
@@ -119,8 +119,8 @@ public interface ISeriesRepository
     Task<List<Series>> GetSeriesFromExternalMetadata(IList<string> seriesNames, IList<MangaFormat> formats,
         int userId, ExternalMetadataIdsDto? dto = null, SeriesIncludes includes = SeriesIncludes.None, CancellationToken ct = default);
     public Task<IList<Series>> GetAllSeriesByAnyNameAsync(string seriesName, string localizedName, int libraryId,
-        MangaFormat format, CancellationToken ct = default);
-    Task<IList<Series>> RemoveSeriesNotInListAsync(IList<ParsedSeries> seenSeries, int libraryId, CancellationToken ct = default);
+        MangaFormat format, CancellationToken ct = default, bool ignoreFormat = false);
+    Task<IList<Series>> RemoveSeriesNotInListAsync(IList<ParsedSeries> seenSeries, int libraryId, CancellationToken ct = default, bool ignoreFormat = false);
     Task<IDictionary<string, IList<SeriesModified>>> GetFolderPathMapAsync(int libraryId, CancellationToken ct = default);
     Task<AgeRating> GetMaxAgeRatingFromSeriesAsyncAsync(IEnumerable<int> seriesIds, CancellationToken ct = default);
     Task<IList<SeriesMetadataDto>> GetSeriesMetadataForIdsAsync(IEnumerable<int> seriesIds, CancellationToken ct = default);

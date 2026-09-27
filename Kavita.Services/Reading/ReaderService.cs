@@ -25,6 +25,7 @@ using Kavita.Services.Comparators;
 using Kavita.Services.Extensions;
 using Kavita.Services.Metadata;
 using Kavita.Services.Scanner;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Kavita.Services.Reading;
@@ -376,6 +377,11 @@ public class ReaderService(IUnitOfWork unitOfWork, ILogger<ReaderService> logger
             return -1;
         }
 
+        if (currentVolume.Chapters.All(chapter => chapter.IsSpecial) && await IsRpgSeriesAsync(seriesId))
+        {
+            return -1;
+        }
+
         var currentVolumeIndex = volumes.IndexOf(currentVolume);
         var chapterId = -1;
 
@@ -454,6 +460,11 @@ public class ReaderService(IUnitOfWork unitOfWork, ILogger<ReaderService> logger
         var currentVolume = volumes.Single(v => v.Id == volumeId);
         var currentChapter = currentVolume.Chapters.Single(c => c.Id == currentChapterId);
 
+        if (currentVolume.Chapters.All(chapter => chapter.IsSpecial) && await IsRpgSeriesAsync(seriesId))
+        {
+            return -1;
+        }
+
         var chapterId = -1;
 
         if (currentVolume.IsSpecial())
@@ -501,6 +512,14 @@ public class ReaderService(IUnitOfWork unitOfWork, ILogger<ReaderService> logger
         if (chapterId > 0) return chapterId;
 
         return -1;
+    }
+
+    private Task<bool> IsRpgSeriesAsync(int seriesId)
+    {
+        return unitOfWork.DataContext.Series
+            .Where(series => series.Id == seriesId)
+            .Select(series => series.Library.Type == LibraryType.Rpg)
+            .SingleAsync();
     }
 
     private static int GetPrevChapterId<T>(IEnumerable<T> source, float currentValue, Func<T, float> selector, Func<T, int> idSelector)
@@ -1041,6 +1060,8 @@ public class ReaderService(IUnitOfWork unitOfWork, ILogger<ReaderService> logger
             case LibraryType.Book:
             case LibraryType.LightNovel:
                 return "Book" + (includeSpace ? " " : string.Empty);
+            case LibraryType.Rpg:
+                return "Version" + (includeSpace ? " " : string.Empty);
             default:
                 throw new ArgumentOutOfRangeException(nameof(libraryType), libraryType, null);
         }

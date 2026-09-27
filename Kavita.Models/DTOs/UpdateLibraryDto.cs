@@ -55,6 +55,8 @@ public sealed record UpdateLibraryDto
     /// <inheritdoc cref="Library.MetadataProvider"/>
     [EnumDataType(typeof(MetadataProvider))]
     public MetadataProvider MetadataProvider { get; init; }
+    public bool EnableRpgGeekMetadata { get; init; }
+    public bool EnableDriveThruRpgMetadata { get; init; }
     /// <summary>
     /// What types of files to allow the scanner to pickup
     /// </summary>

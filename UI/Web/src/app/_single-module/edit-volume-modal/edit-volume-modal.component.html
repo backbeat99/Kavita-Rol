@@ -5,6 +5,7 @@
     [title]="t('title')"
     [translocoPrefix]="'edit-volume-modal'"
     [formGroup]="editForm"
+    [saving]="isSaving()"
     (activeTabIdChange)="changeTab($event)"
     [activeTabId]="activeId"
     (close)="close()"
@@ -95,10 +96,56 @@
       }
     </ng-template>
 
+    @if (libraryType === LibraryType.Rpg && accountService.hasAdminRole()) {
+      <ng-template [appEditTab]="Tabs.Metadata">
+        <div class="rpg-bibliography">
+          <p class="rpg-form-help">{{t('rpg-metadata-help')}}</p>
+          <div class="rpg-field">
+            <label for="rpg-name">{{t('rpg-title')}}</label>
+            <input id="rpg-name" class="form-control" formControlName="name" maxlength="500" required (input)="protect('nameLocked')">
+            @if (editForm.get('name')?.invalid && editForm.get('name')?.touched) { <small role="alert">{{t('rpg-title-required')}}</small> }
+            <label class="rpg-lock"><input type="checkbox" formControlName="nameLocked"> {{t('rpg-lock')}}</label>
+          </div>
+          <div class="rpg-field">
+            <label for="rpg-summary">{{t('rpg-summary')}}</label>
+            <textarea id="rpg-summary" class="form-control" rows="4" formControlName="summary" maxlength="10000" (input)="protect('summaryLocked')"></textarea>
+            <label class="rpg-lock"><input type="checkbox" formControlName="summaryLocked"> {{t('rpg-lock')}}</label>
+          </div>
+          <div class="rpg-field">
+            <label for="rpg-year">{{t('rpg-year')}}</label>
+            <input id="rpg-year" class="form-control" type="number" min="1000" max="9999" step="1" formControlName="rpgPublicationYear" (input)="protect('rpgPublicationYearLocked')">
+            @if (editForm.get('rpgPublicationYear')?.invalid) { <small role="alert">{{t('rpg-year-invalid')}}</small> }
+            <label class="rpg-lock"><input type="checkbox" formControlName="rpgPublicationYearLocked"> {{t('rpg-lock')}}</label>
+          </div>
+          <div class="rpg-field">
+            <label for="rpg-writers">{{t('rpg-writers')}}</label>
+            <input id="rpg-writers" class="form-control" formControlName="rpgWriters" (input)="protect('rpgWritersLocked')">
+            <small>{{t('rpg-names-help')}}</small>
+            <label class="rpg-lock"><input type="checkbox" formControlName="rpgWritersLocked"> {{t('rpg-lock')}}</label>
+          </div>
+          <div class="rpg-field">
+            <label for="rpg-publishers">{{t('rpg-publishers')}}</label>
+            <input id="rpg-publishers" class="form-control" formControlName="rpgPublishers" (input)="protect('rpgPublishersLocked')">
+            <small>{{t('rpg-names-help')}}</small>
+            <label class="rpg-lock"><input type="checkbox" formControlName="rpgPublishersLocked"> {{t('rpg-lock')}}</label>
+          </div>
+          <p class="rpg-form-help">{{t('rpg-search-note')}}</p>
+          @if (saveError()) { <p class="alert alert-danger" role="alert">{{t('rpg-save-error')}}</p> }
+        </div>
+      </ng-template>
+    }
+
     <!--External Metadata Ids-->
     @if (accountService.hasAdminRole()) {
       <ng-template [appEditTab]="Tabs.ExternalMetadataIds">
         <app-edit-external-metadata-form [form]="editForm" [entity]="volume"/>
+        @if (libraryType === LibraryType.Rpg && volume.rpgMaterialType >= 1 && volume.rpgMaterialType <= 5) {
+          <div class="rpg-external-id">
+            <strong>{{t('rpggeek-id')}}</strong>
+            <span>{{volume.rpgGeekId || t('rpggeek-not-linked')}}</span>
+            <p>{{t('rpggeek-id-help')}}</p>
+          </div>
+        }
       </ng-template>
     }
 

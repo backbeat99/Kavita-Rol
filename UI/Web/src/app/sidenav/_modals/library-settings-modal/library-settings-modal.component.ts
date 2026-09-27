@@ -131,6 +131,8 @@ export class LibrarySettingsModalComponent implements OnInit {
     allowMetadataMatching: new FormControl<boolean>(true, { nonNullable: true, validators: [] }),
     collapseSeriesRelationships: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
     enableMetadata: new FormControl<boolean>(true, { nonNullable: true, validators: [] }), // required validator doesn't check value, just if true
+    enableRpgGeekMetadata: new FormControl<boolean>(false, {nonNullable: true, validators: []}),
+    enableDriveThruRpgMetadata: new FormControl<boolean>(false, {nonNullable: true, validators: []}),
     removePrefixForSortName: new FormControl<boolean>(false, { nonNullable: true, validators: [] }),
     inheritWebLinksFromFirstChapter: new FormControl<boolean>(false, { nonNullable: true, validators: []}),
     defaultLanguage: new FormControl<string>('', {nonNullable: true, validators: []}),
@@ -139,10 +141,11 @@ export class LibrarySettingsModalComponent implements OnInit {
   });
 
   selectedLibraryType = toSignal(this.libraryForm.get('type')!.valueChanges.pipe(
-    map(() => this.libraryForm.getRawValue().type as LibraryType),
+    map(() => parseInt(this.libraryForm.getRawValue().type + '', 10) as LibraryType),
   ), { initialValue: LibraryType.Manga });
 
   supportsMetadata = computed(() => {
+    if (this.selectedLibraryType() === LibraryType.Rpg) return false;
     if (this.validMetadataProviders.hasValue()) {
       return this.validMetadataProviders.value().length > 0;
     }
@@ -175,7 +178,7 @@ export class LibrarySettingsModalComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      if (!this.validMetadataProviders.hasValue()) return;
+      if (this.selectedLibraryType() === LibraryType.Rpg || !this.validMetadataProviders.hasValue()) return;
       const validMetadataProviders = this.validMetadataProviders.value();
       const selectedMetadataProvider = this.libraryForm.get('metadataProvider')!.value as MetadataProvider;
 
@@ -280,6 +283,12 @@ export class LibrarySettingsModalComponent implements OnInit {
             this.libraryForm.get(FileTypeGroup.Pdf + '')?.setValue(false);
             this.libraryForm.get(FileTypeGroup.Epub + '')?.setValue(false);
             break;
+          case LibraryType.Rpg:
+            this.libraryForm.get(FileTypeGroup.Archive + '')?.setValue(true);
+            this.libraryForm.get(FileTypeGroup.Images + '')?.setValue(true);
+            this.libraryForm.get(FileTypeGroup.Pdf + '')?.setValue(true);
+            this.libraryForm.get(FileTypeGroup.Epub + '')?.setValue(false);
+            break;
         }
 
         if (!this.scrobbleEnabledLibraries().includes(libType)) {
@@ -312,6 +321,8 @@ export class LibrarySettingsModalComponent implements OnInit {
       this.libraryForm.get('allowScrobbling')?.setValue(this.scrobbleEnabledLibraries().includes(this.library.type) ? this.library.allowScrobbling : false);
       this.libraryForm.get('allowMetadataMatching')?.setValue(this.library.allowMetadataMatching);
       this.libraryForm.get('metadataProvider')?.setValue(this.library.metadataProvider);
+      this.libraryForm.get('enableRpgGeekMetadata')?.setValue(this.library.enableRpgGeekMetadata);
+      this.libraryForm.get('enableDriveThruRpgMetadata')?.setValue(this.library.enableDriveThruRpgMetadata);
       this.libraryForm.get('excludePatterns')?.setValue(this.excludePatterns ? this.library.excludePatterns : false);
       this.libraryForm.get('enableMetadata')?.setValue(this.library.enableMetadata);
       this.libraryForm.get('removePrefixForSortName')?.setValue(this.library.removePrefixForSortName);

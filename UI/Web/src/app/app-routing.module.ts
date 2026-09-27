@@ -103,6 +103,24 @@ export const routes: Routes = [
             loadComponent: () => import('./series-detail/_components/series-detail/series-detail.component').then(c => c.default)
           },
           {
+            path: 'series/:seriesId/rpg-review',
+            pathMatch: 'full',
+            resolve: { series: seriesResolver },
+            loadComponent: () => import('./rpg/rpg-material-review.component').then(c => c.RpgMaterialReviewComponent)
+          },
+          {
+            path: 'series/:seriesId/rpg-geek-review',
+            pathMatch: 'full',
+            resolve: { series: seriesResolver },
+            loadComponent: () => import('./rpg/rpg-geek-batch-review.component').then(c => c.RpgGeekBatchReviewComponent)
+          },
+          {
+            path: 'series/:seriesId/volume/:volumeId/rpg-geek',
+            pathMatch: 'full',
+            resolve: { series: seriesResolver, volume: volumeResolver },
+            loadComponent: () => import('./rpg/rpg-geek-review.component').then(c => c.RpgGeekReviewComponent)
+          },
+          {
             path: 'series/:seriesId/volume/:volumeId',
             pathMatch: 'full',
             resolve: { series: seriesResolver, volume: volumeResolver },

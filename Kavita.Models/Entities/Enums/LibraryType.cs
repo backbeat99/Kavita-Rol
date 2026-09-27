@@ -35,4 +35,7 @@ public enum LibraryType
     /// </summary>
     [Description("Comic")]
     ComicVine = 5,
+    /// <summary>Provides a task-oriented catalog for tabletop RPG games and material.</summary>
+    [Description("RPG")]
+    Rpg = 6,
 }

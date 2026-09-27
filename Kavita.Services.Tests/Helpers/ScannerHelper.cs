@@ -63,14 +63,15 @@ public class ScannerHelper
         return library;
     }
 
-    public ScannerService CreateServices(DirectoryService? ds = null, IFileSystem? fs = null)
+    public ScannerService CreateServices(DirectoryService? ds = null, IFileSystem? fs = null,
+        IBookService? bookService = null)
     {
         fs ??= new FileSystem();
         ds ??= new DirectoryService(Substitute.For<ILogger<DirectoryService>>(), fs);
 
         var archiveService = new ArchiveService(Substitute.For<ILogger<ArchiveService>>(), ds,
             Substitute.For<IImageService>(), Substitute.For<IMediaErrorService>());
-        var readingItemService = new ReadingItemService(archiveService, Substitute.For<IBookService>(),
+        var readingItemService = new ReadingItemService(archiveService, bookService ?? Substitute.For<IBookService>(),
             Substitute.For<IImageService>(), ds, Substitute.For<ILogger<ReadingItemService>>(),
             Substitute.For<IMediaErrorService>());
 

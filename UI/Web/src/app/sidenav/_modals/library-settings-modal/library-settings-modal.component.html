@@ -153,7 +153,7 @@
               </app-setting-switch>
             </div>
 
-            @if (libraryForm.get('metadataProvider'); as control) {
+            @if (selectedLibraryType() !== LibraryType.Rpg && libraryForm.get('metadataProvider'); as control) {
               <div class="row g-0 mt-4 mb-4">
                 <app-setting-item [title]="t('metadata-provider-label')" [subtitle]="t('metadata-provider-tooltip')" [canEdit]="validMetadataProviders.hasValue() && validMetadataProviders.value().length > 1">
                   <ng-template #view>
@@ -168,6 +168,27 @@
                     </select>
                   </ng-template>
                 </app-setting-item>
+              </div>
+            }
+
+            @if (selectedLibraryType() === LibraryType.Rpg) {
+              <div class="row g-0 mt-4 mb-4">
+                <app-setting-switch [title]="t('enable-rpggeek-label')" [subtitle]="t('enable-rpggeek-tooltip')">
+                  <ng-template>
+                    <div class="form-check form-switch float-end">
+                      <input type="checkbox" role="switch" formControlName="enableRpgGeekMetadata" class="form-check-input">
+                    </div>
+                  </ng-template>
+                </app-setting-switch>
+              </div>
+              <div class="row g-0 mt-4 mb-4">
+                <app-setting-switch [title]="t('enable-drivethrurpg-label')" [subtitle]="t('enable-drivethrurpg-tooltip')">
+                  <ng-template>
+                    <div class="form-check form-switch float-end">
+                      <input type="checkbox" role="switch" formControlName="enableDriveThruRpgMetadata" class="form-check-input">
+                    </div>
+                  </ng-template>
+                </app-setting-switch>
               </div>
             }
 

@@ -128,6 +128,7 @@ import {RelationKind} from "../../../_models/series-detail/relation-kind";
 import {EditSeriesModalComponent} from "../../../cards/_modals/edit-series-modal/edit-series-modal.component";
 import {ReadingHistoryViewerComponent} from "../../../shared/reading-history-viewer/reading-history-viewer.component";
 import {StatisticsService} from "../../../_services/statistics.service";
+import {RpgGameDetailComponent} from "../../../rpg/rpg-game-detail.component";
 import {ReadingHistoryItem} from "../../../_models/stats/reading-history-item";
 import {Pagination} from "../../../_models/pagination";
 import {Series} from "../../../_models/series";
@@ -152,7 +153,8 @@ const READING_HISTORY_PAGE_SIZE = 10;
     TranslocoDirective, NgTemplateOutlet, NextExpectedCardComponent,
     NgClass, DetailsTabComponent, DefaultValuePipe, ExternalRatingComponent, ReadMoreComponent, RouterLink, BadgeExpanderComponent,
     PublicationStatusPipe, MetadataDetailRowComponent, DownloadButtonComponent, RelatedTabComponent, CoverImageComponent, ReviewsComponent,
-    AnnotationsTabComponent, ReadingProgressStatusPipePipe, ReadingProgressIconPipePipe, EntityCardComponent, TabTitlePipe, ReadingHistoryViewerComponent]
+    AnnotationsTabComponent, ReadingProgressStatusPipePipe, ReadingProgressIconPipePipe, EntityCardComponent, TabTitlePipe, ReadingHistoryViewerComponent,
+    RpgGameDetailComponent]
 })
 class SeriesDetailComponent implements OnInit, AfterViewInit {
 
@@ -267,6 +269,9 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
     if (currentlyReadingChp === null || !this.hasReadingProgress()) return '';
 
     if (!currentlyReadingChp.isSpecial) {
+      if (this.libraryType() === LibraryType.Rpg) {
+        return currentlyReadingChp.titleName || currentlyReadingChp.title || '';
+      }
       const vol = this.volumes().filter(v => v.id === currentlyReadingChp.volumeId);
 
       let chapterLocaleKey = 'common.chapter-num-shorthand';
@@ -381,6 +386,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
   readonly shouldShowStorylineTab = computed(() => {
     const libType = this.libraryType();
     const chapters = this.chapters();
+    if (libType === LibraryType.Rpg) return false;
 
     if (libType === LibraryType.ComicVine) return false;
 
@@ -394,6 +400,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
   readonly shouldShowVolumeTab = computed(() => {
     const libType = this.libraryType();
     const chapters = this.chapters();
+    if (libType === LibraryType.Rpg) return this.volumes().length > 0;
 
     if (libType === LibraryType.ComicVine) {
       if (this.volumes().length > 1) return true;
@@ -455,7 +462,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
     return item as ExternalSeries;
   }
 
-  showChapterTab = computed(() => this.chapters().length > 0);
+  showChapterTab = computed(() => this.libraryType() !== LibraryType.Rpg && this.chapters().length > 0);
   annotations = signal<Annotation[]>([]);
 
   totalRelatedCount = computed(() => this.relations().length + this.readingLists().length + this.collections().length + (this.bookmarks().length > 0 ? 1 : 0));
@@ -793,6 +800,12 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
    */
   updateSelectedTab() {
     const libType = this.libraryType();
+    if (libType === LibraryType.Rpg) {
+      this.activeTabId = this.volumes().length > 0 ? Tabs.Volumes : Tabs.Specials;
+      this.updateUrl(this.activeTabId);
+      this.cdRef.markForCheck();
+      return;
+    }
     // Book libraries only have Volumes or Specials enabled
     if (libType === LibraryType.Book || libType === LibraryType.LightNovel) {
       if (this.volumes().length === 0) {
@@ -871,6 +884,7 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
   }
 
   read(incognitoMode: boolean = false) {
+    if (this.libraryType() === LibraryType.Rpg) return;
     if (this.bulkSelectionService.hasSelections()) return;
 
     this.readerService.readSeries(this.series()!, incognitoMode);
@@ -897,9 +911,10 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
     }
   }
 
-  openEditSeriesModal() {
+  openEditSeriesModal(activeTab: Tabs = Tabs.General) {
     const modalRef = this.modalService.open(EditSeriesModalComponent);
     modalRef.componentInstance.series = this.series();
+    modalRef.componentInstance.active = activeTab;
     modalRef.closed.subscribe((closeResult: ModalResult<Series>) => {
       if (closeResult.success) {
         window.scrollTo(0, 0);

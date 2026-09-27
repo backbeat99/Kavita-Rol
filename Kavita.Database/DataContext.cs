@@ -185,6 +185,12 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
         builder.Entity<Library>()
             .Property(l => l.DefaultLanguage)
             .HasDefaultValue(string.Empty);
+        builder.Entity<Library>()
+            .Property(l => l.EnableDriveThruRpgMetadata)
+            .HasDefaultValue(false);
+        builder.Entity<Library>()
+            .Property(l => l.EnableRpgGeekMetadata)
+            .HasDefaultValue(false);
 
         #endregion
 
@@ -219,6 +225,22 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
             .HasJsonConversion([])
             .HasColumnType("TEXT")
             .HasDefaultValue(new List<MetadataSettingField>());
+
+        builder.Entity<Volume>()
+            .Property(volume => volume.RpgMaterialType)
+            .HasDefaultValue(RpgMaterialType.Unclassified);
+
+        builder.Entity<Volume>()
+            .Property(volume => volume.RpgWriters)
+            .HasJsonConversion(new List<string>())
+            .HasColumnType("TEXT")
+            .HasDefaultValue(new List<string>());
+
+        builder.Entity<Volume>()
+            .Property(volume => volume.RpgPublishers)
+            .HasJsonConversion(new List<string>())
+            .HasColumnType("TEXT")
+            .HasDefaultValue(new List<string>());
 
         builder.Entity<Volume>()
             .Property(sm => sm.KPlusOverrides)

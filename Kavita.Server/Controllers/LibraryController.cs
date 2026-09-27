@@ -70,6 +70,7 @@ public class LibraryController(
         }
 
         ValidateMetadataProvider(dto.Type, dto.MetadataProvider);
+        ValidateRpgMetadataSettings(dto.Type, dto.EnableRpgGeekMetadata, dto.EnableDriveThruRpgMetadata);
 
         var library = new LibraryBuilder(dto.Name, dto.Type)
             .WithFolders(dto.Folders.Select(x => new FolderPath {Path = x}).Distinct().ToList())
@@ -94,6 +95,8 @@ public class LibraryController(
         library.RemovePrefixForSortName = dto.RemovePrefixForSortName;
         library.DefaultLanguage = dto.DefaultLanguage;
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata;
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata;
 
         // Override Scrobbling for Comic libraries since there are no providers to scrobble to
         if (library.Type == LibraryType.Comic)
@@ -430,6 +433,8 @@ public class LibraryController(
                 InheritWebLinksFromFirstChapter = sourceLibrary.InheritWebLinksFromFirstChapter,
                 DefaultLanguage = sourceLibrary.DefaultLanguage,
                 MetadataProvider = sourceLibrary.MetadataProvider,
+                EnableRpgGeekMetadata = sourceLibrary.EnableRpgGeekMetadata,
+                EnableDriveThruRpgMetadata = sourceLibrary.EnableDriveThruRpgMetadata,
                 ExcludePatterns = sourceLibrary.LibraryExcludePatterns.Select(p => p.Pattern).ToList(),
                 FolderWatching = sourceLibrary.FolderWatching,
                 ManageCollections = sourceLibrary.ManageCollections,
@@ -740,6 +745,7 @@ public class LibraryController(
         }
 
         ValidateMetadataProvider(library.Type, dto.MetadataProvider);
+        ValidateRpgMetadataSettings(library.Type, dto.EnableRpgGeekMetadata, dto.EnableDriveThruRpgMetadata);
 
         library.FolderWatching = dto.FolderWatching;
         library.IncludeInDashboard = dto.IncludeInDashboard;
@@ -753,6 +759,8 @@ public class LibraryController(
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
         library.DefaultLanguage = dto.DefaultLanguage;
         library.MetadataProvider = dto.MetadataProvider;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata;
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata;
 
         library.LibraryFileTypes = dto.FileGroupTypes
             .Select(t => new LibraryFileTypeGroup() {FileTypeGroup = t, LibraryId = library.Id})
@@ -769,9 +777,19 @@ public class LibraryController(
 
     private static void ValidateMetadataProvider(LibraryType type, MetadataProvider provider)
     {
+        // RPG libraries use independent providers and never participate in Kavita+ metadata matching.
+        if (type == LibraryType.Rpg) return;
         if (!KavitaPlusConfiguration.IsValidMetadataProviderForLibraryType(type, provider))
         {
             throw new KavitaException("invalid-metadata-provider");
+        }
+    }
+
+    private static void ValidateRpgMetadataSettings(LibraryType type, bool enableRpgGeek, bool enableDriveThruRpg)
+    {
+        if (type != LibraryType.Rpg && (enableRpgGeek || enableDriveThruRpg))
+        {
+            throw new KavitaException("rpg-provider-only-rpg-library");
         }
     }
 

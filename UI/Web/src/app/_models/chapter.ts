@@ -9,6 +9,7 @@ import {IHasReadingTime} from "./common/i-has-reading-time";
 import {IHasCover} from "./common/i-has-cover";
 import {IHasProgress} from "./common/i-has-progress";
 import {IHasMetadataIds} from "./common/i-has-metadata-ids";
+import {DriveThruRpgMatchStatus} from "./rpg/rpg-catalog";
 
 export const LooseLeafOrDefaultNumber = -100000;
 export const SpecialVolumeNumber = 100000;
@@ -74,6 +75,9 @@ export interface Chapter extends IHasCast, IHasReadingTime, IHasCover, IHasProgr
   comicVineId: string | null;
   mangaBakaId: number;
   cbrId: number;
+  driveThruRpgId: number | null;
+  driveThruRpgMatchStatus: DriveThruRpgMatchStatus;
+  driveThruRpgLastCheckedUtc: string | null;
 
   genres: Array<Genre>;
   tags: Array<Tag>;

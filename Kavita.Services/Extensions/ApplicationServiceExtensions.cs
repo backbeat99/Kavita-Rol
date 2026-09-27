@@ -18,6 +18,7 @@ using Kavita.Services.ReadingLists;
 using Kavita.Services.Scanner;
 using Kavita.Services.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 
 namespace Kavita.Services.Extensions;
 
@@ -95,6 +96,9 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IScrobblingService, ScrobblingService>();
         services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IExternalMetadataService, ExternalMetadataService>();
+        services.AddScoped<IRpgMaterialClassificationService, RpgMaterialClassificationService>();
+        services.AddScoped<IRpgGeekMetadataService, RpgGeekMetadataService>();
+        services.AddHttpClient<IRpgGeekClient, RpgGeekClient>();
         services.AddScoped<ISmartCollectionSyncService, SmartCollectionSyncService>();
         services.AddScoped<IWantToReadSyncService, WantToReadSyncService>();
         services.AddScoped<IKavitaPlusAuditService, KavitaPlusAuditService>();

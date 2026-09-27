@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, Input, OnInit, signal} from '@angular/core';
-import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
 import {NgbActiveModal} from "@ng-bootstrap/ng-bootstrap";
 import {TranslocoDirective} from "@jsverse/transloco";
 import {SettingItemComponent} from "../../settings/_components/setting-item/setting-item.component";
@@ -25,7 +25,7 @@ import {DownloadService} from '../../shared/_services/download.service';
 import {DownloadEntityType} from '../../shared/_models/download-queue-item';
 import {LibraryType} from "../../_models/library/library";
 import {PersonRole} from "../../_models/metadata/person";
-import {concat} from "rxjs";
+import {concat, last} from "rxjs";
 import {MangaFile} from "../../_models/manga-file";
 import {BreakpointService} from "../../_services/breakpoint.service";
 import {ActionFactoryService} from "../../_services/action-factory.service";
@@ -33,7 +33,7 @@ import {ActionItem} from "../../_models/actionables/action-item";
 import {Action} from "../../_models/actionables/action";
 import {modalDeleted, modalSaved} from "../../_models/modal/modal-result";
 import {VolumeService} from "../../_services/volume.service";
-import {UpdateVolume} from "../../_models/update-volume";
+import {RpgBibliographyUpdate, UpdateVolume} from "../../_models/update-volume";
 import {Tabs} from "../../_models/tabs";
 import {
   addMetadataIdControls,
@@ -87,6 +87,8 @@ export class EditVolumeModalComponent implements OnInit {
   @Input({required: true}) seriesId!: number;
 
   activeId = Tabs.Info;
+  isSaving = signal(false);
+  saveError = signal(false);
   editForm: FormGroup = new FormGroup({});
   selectedCover: string = '';
   coverImageReset = false;
@@ -121,6 +123,22 @@ export class EditVolumeModalComponent implements OnInit {
 
     this.editForm.addControl('coverImageLocked', new FormControl(this.volume.coverImageLocked, []));
     addMetadataIdControls(this.editForm, this.volume);
+    if (this.libraryType === LibraryType.Rpg && this.accountService.hasAdminRole()) {
+      this.activeId = Tabs.Metadata;
+      const fields = {
+        name: new FormControl(this.volume.name, [Validators.required, Validators.maxLength(500)]),
+        nameLocked: new FormControl(this.volume.nameLocked),
+        summary: new FormControl(this.volume.summary ?? '', [Validators.maxLength(10000)]),
+        summaryLocked: new FormControl(this.volume.summaryLocked),
+        rpgPublicationYear: new FormControl(this.volume.rpgPublicationYear, [Validators.min(1000), Validators.max(9999), Validators.pattern(/^[1-9]\d{3}$/)]),
+        rpgPublicationYearLocked: new FormControl(this.volume.rpgPublicationYearLocked),
+        rpgWriters: new FormControl(this.volume.rpgWriters?.join(', ') ?? ''),
+        rpgWritersLocked: new FormControl(this.volume.rpgWritersLocked),
+        rpgPublishers: new FormControl(this.volume.rpgPublishers?.join(', ') ?? ''),
+        rpgPublishersLocked: new FormControl(this.volume.rpgPublishersLocked)
+      };
+      for (const [key, control] of Object.entries(fields)) this.editForm.addControl(key, control);
+    }
 
     this.chooserConfig.set(this.coverChooserConfigFactory.forVolume(this.volume, this.libraryType));
   }
@@ -134,22 +152,40 @@ export class EditVolumeModalComponent implements OnInit {
   }
 
   save() {
+    if (this.isSaving() || this.editForm.invalid) return;
     const model = this.editForm.getRawValue();
-
     const updateData = {id: this.volume.id, ...model} as UpdateVolume;
+    if (this.libraryType === LibraryType.Rpg) {
+      const parseNames = (value: string): string[] => value.split(',').map(name => name.trim()).filter(Boolean);
+      const bibliography: RpgBibliographyUpdate = {
+        name: model.name.trim(), nameLocked: model.nameLocked,
+        summary: model.summary, summaryLocked: model.summaryLocked,
+        rpgPublicationYear: model.rpgPublicationYear === '' || model.rpgPublicationYear == null ? null : Number(model.rpgPublicationYear),
+        rpgPublicationYearLocked: model.rpgPublicationYearLocked,
+        rpgWriters: parseNames(model.rpgWriters), rpgWritersLocked: model.rpgWritersLocked,
+        rpgPublishers: parseNames(model.rpgPublishers), rpgPublishersLocked: model.rpgPublishersLocked
+      };
+      updateData.rpgBibliography = bibliography;
+    }
 
-    const apis = [
-      this.volumeService.updateVolume(updateData)
-    ];
-
+    const apis = [this.volumeService.updateVolume(updateData)];
     if (this.coverImageDirty) {
       apis.push(this.uploadService.updateVolumeCoverImage(this.volume.id, this.selectedCover, true));
     }
 
-    concat(...apis).subscribe(() => {
-      const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
-      this.modal.close(modalSaved(this.volume, needsCoverUpdate));
+    this.isSaving.set(true);
+    this.saveError.set(false);
+    concat(...apis).pipe(last()).subscribe({
+      next: () => {
+        const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
+        this.modal.close(modalSaved(this.volume, needsCoverUpdate));
+      },
+      error: () => { this.isSaving.set(false); this.saveError.set(true); }
     });
+  }
+
+  protect(field: string): void {
+    this.editForm.get(field)?.setValue(true);
   }
 
 
@@ -201,4 +237,5 @@ export class EditVolumeModalComponent implements OnInit {
   protected readonly Action = Action;
   protected readonly PersonRole = PersonRole;
   protected readonly MangaFormat = MangaFormat;
+  protected readonly LibraryType = LibraryType;
 }

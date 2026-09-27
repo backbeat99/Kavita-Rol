@@ -189,6 +189,10 @@ export class SideNavComponent {
         return 'fa-book-open';
       case LibraryType.Images:
         return 'fa-images';
+      case LibraryType.Rpg:
+        return 'fa-dice-d20';
+      default:
+        return 'fa-folder';
     }
   }
 

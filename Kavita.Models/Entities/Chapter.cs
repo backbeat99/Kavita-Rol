@@ -121,6 +121,10 @@ public class Chapter : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasKP
     /// </summary>
     public string WebLinks { get; set; } = string.Empty;
     public string ISBN { get; set; } = string.Empty;
+    /// <summary>Optional explicit DriveThruRPG association for legacy non-RPG catalog entries.</summary>
+    public int? DriveThruRpgId { get; set; }
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; } = DriveThruRpgMatchStatus.NotSearched;
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
 
     /// <summary>
     /// Tracks which metadata has been set by K+
