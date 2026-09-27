@@ -168,10 +168,7 @@ public class MetadataService(
         {
             if (series.CoverImageLocked) return;
 
-            var coreManuals = series.Volumes
-                .Where(volume => volume.RpgMaterialType == RpgMaterialType.CoreManual)
-                .ToList();
-            series.CoverImage = coreManuals.Count == 1 ? coreManuals[0].CoverImage : null;
+            series.CoverImage = SelectRpgGameCoverImage(series);
             imageService.UpdateColorScape(series);
             _updateEvents.Add(MessageFactory.CoverUpdateEvent(series.Id, MessageFactoryEntityTypes.Series));
             return;
@@ -203,6 +200,49 @@ public class MetadataService(
         _updateEvents.Add(MessageFactory.CoverUpdateEvent(series.Id, MessageFactoryEntityTypes.Series));
     }
 
+
+    /// <summary>
+    /// Prefer an explicitly classified core manual. Until one is identified, the only PDF in the game
+    /// can provide a provisional cover without assigning a material type or choosing among multiple PDFs.
+    /// </summary>
+    internal static string? SelectRpgGameCoverImage(Series series)
+    {
+        if (series.CoverImageLocked) return series.CoverImage;
+
+        var coreManuals = series.Volumes
+            .Where(volume => volume.RpgMaterialType == RpgMaterialType.CoreManual)
+            .ToList();
+        if (coreManuals.Count == 1 && !string.IsNullOrWhiteSpace(coreManuals[0].CoverImage))
+        {
+            return coreManuals[0].CoverImage;
+        }
+
+        if (coreManuals.Count == 0)
+        {
+            var pdfCovers = series.Volumes
+                .SelectMany(volume => volume.Chapters)
+                .SelectMany(chapter => chapter.Files
+                    .Where(file => file.Format == MangaFormat.Pdf)
+                    .Select(file => (file.FilePath, chapter.CoverImage)))
+                .DistinctBy(pdf => pdf.FilePath, StringComparer.OrdinalIgnoreCase)
+                .Take(2)
+                .ToList();
+
+            if (pdfCovers.Count == 1 && !string.IsNullOrWhiteSpace(pdfCovers[0].CoverImage))
+            {
+                return pdfCovers[0].CoverImage;
+            }
+        }
+
+        // If more PDFs appear, retain the previously shown cover only while its source still exists.
+        if (string.IsNullOrWhiteSpace(series.CoverImage)) return null;
+        return series.Volumes.Any(volume =>
+            string.Equals(volume.CoverImage, series.CoverImage, StringComparison.Ordinal) ||
+            volume.Chapters.Any(chapter =>
+                string.Equals(chapter.CoverImage, series.CoverImage, StringComparison.Ordinal)))
+            ? series.CoverImage
+            : null;
+    }
 
     /// <summary>
     ///
