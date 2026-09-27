@@ -99,6 +99,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRpgMaterialClassificationService, RpgMaterialClassificationService>();
         services.AddScoped<IRpgGeekMetadataService, RpgGeekMetadataService>();
         services.AddHttpClient<IRpgGeekClient, RpgGeekClient>();
+        services.AddScoped<IDriveThruRpgMetadataService, DriveThruRpgMetadataService>();
+        services.AddHttpClient<IDriveThruRpgClient, DriveThruRpgClient>();
         services.AddScoped<ISmartCollectionSyncService, SmartCollectionSyncService>();
         services.AddScoped<IWantToReadSyncService, WantToReadSyncService>();
         services.AddScoped<IKavitaPlusAuditService, KavitaPlusAuditService>();

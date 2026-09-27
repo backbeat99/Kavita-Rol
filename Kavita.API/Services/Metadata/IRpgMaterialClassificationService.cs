@@ -21,7 +21,8 @@ public enum RpgMaterialClassificationError
 public sealed record RpgMaterialClassificationResult(
     bool Succeeded,
     RpgMaterialClassificationError Error,
-    IReadOnlyList<int> RpgGeekSearchVolumeIds);
+    IReadOnlyList<int> RpgGeekSearchVolumeIds,
+    IReadOnlyList<int> DriveThruRpgMatchVolumeIds);
 
 public interface IRpgMaterialClassificationService
 {

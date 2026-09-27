@@ -117,6 +117,7 @@
               <div><dt>{{t('rpg-publishers')}}</dt><dd>{{volume().rpgPublishers?.join(', ') || t('rpg-empty')}}</dd></div>
               @if (isRpgPublication()) {
                 <div><dt>{{t('rpggeek-id')}}</dt><dd>{{volume().rpgGeekId || t('rpggeek-not-linked')}}</dd></div>
+                <div><dt>{{t('drivethrurpg-id')}}</dt><dd>{{volume().driveThruRpgId || t('rpggeek-not-linked')}}</dd></div>
               }
             </dl>
             <h3>{{t('rpg-summary')}}</h3>
@@ -128,6 +129,101 @@
           </section>
         } @else {
           <div class="mt-2 mb-3"><app-read-more [text]="volume().chapters[0]?.summary || ''" [useResponsiveLength]="true" /></div>
+        }
+
+        @if (isRpgPublication() && (library().enableDriveThruRpgMetadata || volume().driveThruRpgId)) {
+          <section class="rpg-drivethru-panel" aria-labelledby="drivethrurpg-heading">
+            <header class="rpg-provider-header">
+              <div>
+                <h2 id="drivethrurpg-heading">{{t('drivethrurpg-heading')}}</h2>
+                <p>{{t('drivethrurpg-help')}}</p>
+              </div>
+              <span class="rpg-provider-status" [attr.data-status]="volume().driveThruRpgMatchStatus">
+                {{t('drivethrurpg-status-' + volume().driveThruRpgMatchStatus)}}
+              </span>
+            </header>
+
+            @if (volume().driveThruRpgId) {
+              <p class="rpg-provider-linked">
+                {{t('drivethrurpg-linked-id', {id: volume().driveThruRpgId})}}
+                <a class="rpg-drivethru-external" [href]="'https://www.drivethrurpg.com/product/' + volume().driveThruRpgId"
+                   target="_blank" rel="noopener noreferrer">{{t('drivethrurpg-open-product')}}</a>
+              </p>
+            }
+
+            @if (accountService.hasAdminRole() && library().enableDriveThruRpgMetadata) {
+              @if (!volume().driveThruRpgId) {
+                <div class="rpg-drivethru-search">
+                  <label for="drivethrurpg-query">{{t('drivethrurpg-search-label')}}</label>
+                  <div class="rpg-drivethru-search-controls">
+                    <input id="drivethrurpg-query" type="search" autocomplete="off" [attr.placeholder]="volume().name"
+                           [value]="driveThruSearchQuery()" (input)="setDriveThruSearchQuery($event)"
+                           (keyup.enter)="searchDriveThruRpg()" [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null"
+                           [attr.aria-describedby]="'drivethrurpg-search-help'">
+                    <button class="btn btn-outline-primary" type="button" (click)="searchDriveThruRpg()"
+                            [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
+                      @if (driveThruSearching()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                      {{driveThruSearching() ? t('drivethrurpg-searching') : t('drivethrurpg-search')}}
+                    </button>
+                  </div>
+                  @if (series().name.trim() && series().name.trim() !== volume().name) {
+                    <button class="btn btn-link rpg-drivethru-game-search" type="button" (click)="searchDriveThruRpgByGame()"
+                            [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
+                      {{t('drivethrurpg-search-game-title')}}
+                    </button>
+                  }
+                  <p id="drivethrurpg-search-help">{{t('drivethrurpg-confirmation-note')}}</p>
+                  <div class="rpg-drivethru-manual">
+                    <label for="drivethrurpg-manual-id">{{t('drivethrurpg-manual-id-label')}}</label>
+                    <div class="rpg-drivethru-search-controls">
+                      <input id="drivethrurpg-manual-id" type="number" min="1" step="1" inputmode="numeric"
+                             [value]="driveThruManualProductId() || ''" (input)="setDriveThruManualProductId($event)"
+                             [disabled]="driveThruLinkingProductId() !== null">
+                      <button class="btn btn-outline-secondary" type="button" (click)="linkDriveThruRpgById()"
+                              [disabled]="!driveThruManualProductId() || driveThruLinkingProductId() !== null">
+                        {{t('drivethrurpg-link-by-id')}}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              @if (driveThruRequestFailed()) {
+                <p class="rpg-provider-error" role="alert">{{t('drivethrurpg-request-failed')}}</p>
+              }
+              @if (driveThruOperationQueued()) {
+                <p class="rpg-provider-notice" aria-live="polite">{{t('drivethrurpg-queued')}}</p>
+              }
+              @if (driveThruSearchStarted() && driveThruCandidates().length === 0 && !driveThruSearching() && !driveThruRequestFailed() && !volume().driveThruRpgId) {
+                <p class="rpg-provider-empty">{{t('drivethrurpg-no-candidates')}}</p>
+              }
+              @if (driveThruCandidates().length > 0) {
+                <ol class="rpg-drivethru-candidates" aria-label="{{t('drivethrurpg-results')}}">
+                  @for (candidate of driveThruCandidates(); track candidate.productId) {
+                    <li>
+                      <div class="rpg-candidate-copy">
+                        <strong>{{candidate.title}}</strong>
+                        <a class="rpg-drivethru-external" [href]="'https://www.drivethrurpg.com/product/' + candidate.productId"
+                           target="_blank" rel="noopener noreferrer">{{t('drivethrurpg-product-id', {id: candidate.productId})}}</a>
+                      </div>
+                      <button class="btn btn-outline-primary" type="button" (click)="linkDriveThruRpg(candidate)"
+                              [disabled]="driveThruLinkingProductId() !== null">
+                        @if (driveThruLinkingProductId() === candidate.productId) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        {{driveThruLinkingProductId() === candidate.productId ? t('drivethrurpg-linking') : t('drivethrurpg-link')}}
+                      </button>
+                    </li>
+                  }
+                </ol>
+              }
+              @if (volume().driveThruRpgId) {
+                <button class="btn btn-outline-primary rpg-drivethru-refresh" type="button" (click)="refreshDriveThruRpg()"
+                        [disabled]="driveThruRefreshing()">
+                  @if (driveThruRefreshing()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                  {{driveThruRefreshing() ? t('drivethrurpg-refreshing') : t('drivethrurpg-refresh')}}
+                </button>
+              }
+            }
+          </section>
         }
 
         @if (showRpgVersionPicker()) {

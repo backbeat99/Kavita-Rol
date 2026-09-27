@@ -10,6 +10,7 @@ using Hangfire;
 using Kavita.API.Database;
 using Kavita.API.Repositories;
 using Kavita.API.Services;
+using Kavita.API.Services.Metadata;
 using Kavita.API.Services.Plus;
 using Kavita.API.Services.Scanner;
 using Kavita.API.Services.SignalR;
@@ -418,8 +419,10 @@ public class LibraryController(
         if (sourceLibrary == null) return BadRequest("SourceLibraryId must exist");
 
         var libraries = await unitOfWork.LibraryRepository.GetLibraryForIdsAsync(dto.TargetLibraryIds, LibraryIncludes.ExcludePatterns | LibraryIncludes.FileTypes | LibraryIncludes.Folders, ct);
+        var librariesNeedingDriveThruRpgBackfill = new List<int>();
         foreach (var targetLibrary in libraries)
         {
+            var hadDriveThruRpgEnabled = targetLibrary.EnableDriveThruRpgMetadata;
             UpdateLibrarySettings(new UpdateLibraryDto
             {
                 Folders = targetLibrary.Folders.Select(s => s.Path),
@@ -443,9 +446,20 @@ public class LibraryController(
                 IncludeInSearch = sourceLibrary.IncludeInSearch,
                 ManageReadingLists = sourceLibrary.ManageReadingLists,
             }, targetLibrary, dto.IncludeType);
+
+            if (!hadDriveThruRpgEnabled && targetLibrary.EnableDriveThruRpgMetadata)
+            {
+                librariesNeedingDriveThruRpgBackfill.Add(targetLibrary.Id);
+            }
         }
 
         await unitOfWork.CommitAsync(ct);
+
+        foreach (var libraryId in librariesNeedingDriveThruRpgBackfill)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(libraryId, CancellationToken.None));
+        }
 
         if (sourceLibrary.FolderWatching)
         {
@@ -667,6 +681,7 @@ public class LibraryController(
             return BadRequest(await localizationService.TranslateAsync(userId, "library-name-exists"));
 
         var originalFoldersCount = library.Folders.Count;
+        var hadDriveThruRpgMetadata = library.EnableDriveThruRpgMetadata;
 
         library.Name = newName;
         library.Folders = dto.Folders.Select(s => new FolderPath() {Path = s}).Distinct().ToList();
@@ -676,6 +691,12 @@ public class LibraryController(
         UpdateLibrarySettings(dto, library);
 
         if (!await unitOfWork.CommitAsync(ct)) return BadRequest(await localizationService.TranslateAsync(userId, "generic-library-update"));
+
+        if (!hadDriveThruRpgMetadata && library.EnableDriveThruRpgMetadata)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(library.Id, CancellationToken.None));
+        }
 
         if (folderWatchingUpdate || originalFoldersCount != dto.Folders.Count() || typeUpdate)
         {

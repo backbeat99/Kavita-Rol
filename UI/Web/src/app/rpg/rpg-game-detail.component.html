@@ -38,6 +38,9 @@
         @if (failedRpgGeekSearches().length > 0) {
           <strong>{{failedRpgGeekSearches().length === 1 ? t('review-geek-failed-one') : t('review-geek-failed-count', {count: failedRpgGeekSearches().length})}}</strong>
         }
+        @if (driveThruRpgToReview().length > 0) {
+          <strong>{{driveThruRpgToReview().length === 1 ? t('review-drivethrurpg-one') : t('review-drivethrurpg-count', {count: driveThruRpgToReview().length})}}</strong>
+        }
         <span>{{t('review-description')}}</span>
       </div>
       <div class="review-actions">
@@ -49,6 +52,11 @@
         @if (rpgGeekToReview().length > 0 || failedRpgGeekSearches().length > 0) {
           <a class="btn btn-outline-primary" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-geek-review']">
             {{t('review-geek')}}
+          </a>
+        }
+        @if (driveThruRpgToReview().length > 0) {
+          <a class="btn btn-outline-primary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', driveThruRpgToReview()[0].id]">
+            {{t('review-drivethrurpg')}}
           </a>
         }
       </div>

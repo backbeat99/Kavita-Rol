@@ -39,6 +39,18 @@ export interface RpgMaterialTypeUpdate {
   materialType: RpgMaterialType;
 }
 
+export interface DriveThruRpgSearchResult {
+  productId: number;
+  title: string;
+}
+
+export interface DriveThruRpgCandidateSearchResult {
+  succeeded: boolean;
+  error: number;
+  status: DriveThruRpgMatchStatus;
+  candidates: DriveThruRpgSearchResult[];
+}
+
 export interface RpgGeekSearchResult {
   id: number;
   name: string;

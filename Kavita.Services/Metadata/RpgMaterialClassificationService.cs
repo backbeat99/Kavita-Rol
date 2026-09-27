@@ -59,6 +59,7 @@ public sealed class RpgMaterialClassificationService(
 
         var typesById = updates.ToDictionary(update => update.VolumeId, update => update.MaterialType);
         var rpgGeekSearchVolumeIds = new List<int>();
+        var driveThruRpgMatchVolumeIds = new List<int>();
         foreach (var volume in volumes)
         {
             var previousType = volume.RpgMaterialType;
@@ -71,25 +72,24 @@ public sealed class RpgMaterialClassificationService(
                 continue;
             }
 
-            if (!volume.Series.Library.EnableRpgGeekMetadata || volume.RpgGeekId.HasValue)
-            {
-                continue;
-            }
-
             var newlyClassifiedPublication = !previousType.IsPublication();
-            if (!newlyClassifiedPublication && volume.RpgGeekMatchStatus != RpgGeekMatchStatus.NotSearched)
+            if (volume.Series.Library.EnableRpgGeekMetadata && !volume.RpgGeekId.HasValue &&
+                (newlyClassifiedPublication || volume.RpgGeekMatchStatus == RpgGeekMatchStatus.NotSearched) &&
+                volume.RpgGeekMatchStatus != RpgGeekMatchStatus.Pending)
             {
-                continue;
+                volume.RpgGeekMatchStatus = RpgGeekMatchStatus.Pending;
+                volume.RpgGeekLastCheckedUtc = null;
+                rpgGeekSearchVolumeIds.Add(volume.Id);
             }
 
-            if (volume.RpgGeekMatchStatus == RpgGeekMatchStatus.Pending)
+            if (volume.Series.Library.EnableDriveThruRpgMetadata && !volume.DriveThruRpgId.HasValue &&
+                (newlyClassifiedPublication || volume.DriveThruRpgMatchStatus == DriveThruRpgMatchStatus.NotSearched) &&
+                volume.DriveThruRpgMatchStatus != DriveThruRpgMatchStatus.Pending)
             {
-                continue;
+                volume.DriveThruRpgMatchStatus = DriveThruRpgMatchStatus.Pending;
+                volume.DriveThruRpgLastCheckedUtc = null;
+                driveThruRpgMatchVolumeIds.Add(volume.Id);
             }
-
-            volume.RpgGeekMatchStatus = RpgGeekMatchStatus.Pending;
-            volume.RpgGeekLastCheckedUtc = null;
-            rpgGeekSearchVolumeIds.Add(volume.Id);
         }
 
         if (unitOfWork.HasChanges() && !await unitOfWork.CommitAsync(cancellationToken))
@@ -97,7 +97,8 @@ public sealed class RpgMaterialClassificationService(
             logger.LogError("RPG batch classification for series {SeriesId} reported no database changes after updating items", seriesId);
         }
 
-        return new RpgMaterialClassificationResult(true, RpgMaterialClassificationError.None, rpgGeekSearchVolumeIds);
+        return new RpgMaterialClassificationResult(true, RpgMaterialClassificationError.None,
+            rpgGeekSearchVolumeIds, driveThruRpgMatchVolumeIds);
     }
 
     private static void ResetUnlinkedProviderSearch(Kavita.Models.Entities.Volume volume)
@@ -116,5 +117,5 @@ public sealed class RpgMaterialClassificationService(
     }
 
     private static RpgMaterialClassificationResult Failure(RpgMaterialClassificationError error) =>
-        new(false, error, Array.Empty<int>());
+        new(false, error, Array.Empty<int>(), Array.Empty<int>());
 }

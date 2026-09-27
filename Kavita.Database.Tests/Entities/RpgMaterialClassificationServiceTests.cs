@@ -39,10 +39,38 @@ public class RpgMaterialClassificationServiceTests(ITestOutputHelper output) : A
 
         Assert.True(result.Succeeded);
         Assert.Equal([publication.Id], result.RpgGeekSearchVolumeIds);
+        Assert.Empty(result.DriveThruRpgMatchVolumeIds);
+        Assert.Equal(DriveThruRpgMatchStatus.NotSearched, publication.DriveThruRpgMatchStatus);
         Assert.Equal(RpgMaterialType.Adventure, publication.RpgMaterialType);
         Assert.Equal(RpgMaterialType.CardsAndTokens, resource.RpgMaterialType);
         Assert.Equal(RpgGeekMatchStatus.Pending, publication.RpgGeekMatchStatus);
         Assert.Equal(RpgGeekMatchStatus.NotSearched, resource.RpgGeekMatchStatus);
+        Assert.Equal(DriveThruRpgMatchStatus.NotSearched, resource.DriveThruRpgMatchStatus);
+    }
+
+    [Fact]
+    public async Task ClassifyBatch_QueuesDriveThruOnlyForEnabledClassifiedPublications()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var publication = new VolumeBuilder("Core Book").Build();
+        var resource = new VolumeBuilder("Map").Build();
+        var series = new SeriesBuilder("Pirate Borg").WithVolumes([publication, resource]).Build();
+        var library = new LibraryBuilder("RPG", LibraryType.Rpg).WithSeries(series).Build();
+        library.EnableDriveThruRpgMetadata = true;
+        context.Library.Add(library);
+        await unitOfWork.CommitAsync();
+
+        var service = new RpgMaterialClassificationService(unitOfWork, NullLogger<RpgMaterialClassificationService>.Instance);
+        var result = await service.ClassifyBatchAsync(series.Id,
+        [
+            new RpgMaterialClassificationUpdate(publication.Id, RpgMaterialType.CoreManual),
+            new RpgMaterialClassificationUpdate(resource.Id, RpgMaterialType.Map),
+        ]);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal([publication.Id], result.DriveThruRpgMatchVolumeIds);
+        Assert.Empty(result.RpgGeekSearchVolumeIds);
+        Assert.Equal(DriveThruRpgMatchStatus.Pending, publication.DriveThruRpgMatchStatus);
         Assert.Equal(DriveThruRpgMatchStatus.NotSearched, resource.DriveThruRpgMatchStatus);
     }
 

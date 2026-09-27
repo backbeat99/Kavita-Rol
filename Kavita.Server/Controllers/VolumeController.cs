@@ -23,7 +23,8 @@ namespace Kavita.Server.Controllers;
 
 public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService localizationService, IEventHub eventHub,
     IRpgMaterialClassificationService rpgMaterialClassificationService,
-    IRpgGeekMetadataService rpgGeekMetadataService)
+    IRpgGeekMetadataService rpgGeekMetadataService,
+    IDriveThruRpgMetadataService driveThruRpgMetadataService)
     : BaseApiController
 {
     /// <summary>
@@ -104,6 +105,12 @@ public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService local
         {
             BackgroundJob.Enqueue<IRpgGeekMetadataService>(service =>
                 service.SearchCandidatesAsync(volumeId, CancellationToken.None));
+        }
+
+        if (result.DriveThruRpgMatchVolumeIds.Count > 0)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedVolumesAsync(result.DriveThruRpgMatchVolumeIds.ToList(), CancellationToken.None));
         }
 
         return Accepted(result.RpgGeekSearchVolumeIds);
@@ -191,6 +198,79 @@ public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService local
 
         return Ok(true);
     }
+
+    [HttpGet("rpg/drivethrurpg/candidates")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult<DriveThruRpgCandidateSearchResult>> SearchDriveThruRpgCandidates(
+        int volumeId, string? query = null)
+    {
+        var result = await driveThruRpgMetadataService.SearchCandidatesForVolumeAsync(
+            volumeId, query, HttpContext.RequestAborted);
+        if (!result.Succeeded)
+        {
+            return BadRequest(await localizationService.TranslateAsync(UserId, DriveThruRpgErrorKey(result.Error)));
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost("rpg/drivethrurpg/link")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult<bool>> LinkDriveThruRpg(int volumeId, int productId)
+    {
+        var result = await driveThruRpgMetadataService.LinkVolumeAsync(
+            volumeId, productId, HttpContext.RequestAborted);
+        if (!result.Succeeded)
+        {
+            return BadRequest(await localizationService.TranslateAsync(UserId, DriveThruRpgErrorKey(result.Error)));
+        }
+
+        BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+            service.RefreshVolumeAsync(volumeId, CancellationToken.None));
+        return Accepted(true);
+    }
+
+    [HttpPost("rpg/drivethrurpg/refresh")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult> RefreshDriveThruRpgMetadata(int volumeId)
+    {
+        var error = await GetDriveThruRpgEligibilityErrorAsync(volumeId, HttpContext.RequestAborted);
+        if (error != DriveThruRpgMetadataOperationError.None)
+        {
+            return BadRequest(await localizationService.TranslateAsync(UserId, DriveThruRpgErrorKey(error)));
+        }
+
+        BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+            service.RefreshVolumeAsync(volumeId, CancellationToken.None));
+        return Accepted();
+    }
+
+    private async Task<DriveThruRpgMetadataOperationError> GetDriveThruRpgEligibilityErrorAsync(
+        int volumeId, CancellationToken cancellationToken)
+    {
+        var volume = await unitOfWork.DataContext.Volume
+            .Include(item => item.Series)
+            .ThenInclude(series => series.Library)
+            .FirstOrDefaultAsync(item => item.Id == volumeId, cancellationToken);
+        if (volume is null) return DriveThruRpgMetadataOperationError.VolumeNotFound;
+        if (volume.Series.Library.Type != LibraryType.Rpg) return DriveThruRpgMetadataOperationError.NotRpgLibrary;
+        if (!volume.RpgMaterialType.IsPublication()) return DriveThruRpgMetadataOperationError.NotPublication;
+        return volume.Series.Library.EnableDriveThruRpgMetadata
+            ? DriveThruRpgMetadataOperationError.None
+            : DriveThruRpgMetadataOperationError.ProviderDisabled;
+    }
+
+    private static string DriveThruRpgErrorKey(DriveThruRpgMetadataOperationError error) => error switch
+    {
+        DriveThruRpgMetadataOperationError.VolumeNotFound => "volume-doesnt-exist",
+        DriveThruRpgMetadataOperationError.NotRpgLibrary => "drivethrurpg-not-rpg-library",
+        DriveThruRpgMetadataOperationError.NotPublication => "drivethrurpg-not-publication",
+        DriveThruRpgMetadataOperationError.ProviderDisabled => "drivethrurpg-provider-disabled",
+        DriveThruRpgMetadataOperationError.QueryRequired => "drivethrurpg-query-required",
+        DriveThruRpgMetadataOperationError.InvalidProductId => "drivethrurpg-invalid-product-id",
+        DriveThruRpgMetadataOperationError.ProviderRequestFailed => "drivethrurpg-request-failed",
+        _ => "generic-error"
+    };
 
     private static string RpgGeekErrorKey(RpgGeekMetadataOperationError error) => error switch
     {

@@ -7,6 +7,7 @@ import {UpdateVolume} from "../_models/update-volume";
 import {
   ApplyRpgGeekCandidate,
   ApplyRpgGeekCandidatesBatch,
+  DriveThruRpgCandidateSearchResult,
   RpgGeekCandidatePreview,
   RpgGeekCandidateSearchResult,
   RpgMaterialTypeUpdate
@@ -39,6 +40,23 @@ export class VolumeService {
 
   classifyRpgMaterialBatch(seriesId: number, items: RpgMaterialTypeUpdate[]) {
     return this.httpClient.post<number[]>(this.baseUrl + 'volume/rpg/classify-batch', {seriesId, items});
+  }
+
+  searchDriveThruRpgCandidates(volumeId: number, query: string) {
+    const params = new URLSearchParams({volumeId: String(volumeId)});
+    if (query.trim()) params.set('query', query.trim());
+    return this.httpClient.get<DriveThruRpgCandidateSearchResult>(
+      this.baseUrl + 'volume/rpg/drivethrurpg/candidates?' + params.toString());
+  }
+
+  linkDriveThruRpg(volumeId: number, productId: number) {
+    const params = new URLSearchParams({volumeId: String(volumeId), productId: String(productId)});
+    return this.httpClient.post<boolean>(this.baseUrl + 'volume/rpg/drivethrurpg/link?' + params.toString(), null);
+  }
+
+  refreshDriveThruRpg(volumeId: number) {
+    const params = new URLSearchParams({volumeId: String(volumeId)});
+    return this.httpClient.post(this.baseUrl + 'volume/rpg/drivethrurpg/refresh?' + params.toString(), null);
   }
 
   searchRpgGeekCandidates(volumeId: number, query: string, forceRefresh = false) {

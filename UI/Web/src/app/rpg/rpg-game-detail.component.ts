@@ -9,7 +9,7 @@ import {ImageService} from '../_services/image.service';
 import {ReaderService} from '../_services/reader.service';
 import {SeriesService} from '../_services/series.service';
 import {Library} from '../_models/library/library';
-import {RpgGeekMatchStatus, RpgMaterialType} from '../_models/rpg/rpg-catalog';
+import {DriveThruRpgMatchStatus, RpgGeekMatchStatus, RpgMaterialType} from '../_models/rpg/rpg-catalog';
 import {Series} from '../_models/series';
 import {Volume} from '../_models/volume';
 
@@ -63,8 +63,14 @@ export class RpgGameDetailComponent implements OnInit, OnDestroy {
     ? this.publications().filter(volume => !volume.rpgGeekId && volume.rpgGeekMatchStatus === RpgGeekMatchStatus.Failed)
     : []);
 
+  readonly driveThruRpgToReview = computed(() => this.library().enableDriveThruRpgMetadata
+    ? this.publications().filter(volume => !volume.driveThruRpgId &&
+      [DriveThruRpgMatchStatus.Candidate, DriveThruRpgMatchStatus.Ambiguous, DriveThruRpgMatchStatus.Failed]
+        .includes(volume.driveThruRpgMatchStatus))
+    : []);
+
   readonly hasReviewWork = computed(() => this.unclassified().length > 0 ||
-    this.rpgGeekToReview().length > 0 || this.failedRpgGeekSearches().length > 0);
+    this.rpgGeekToReview().length > 0 || this.failedRpgGeekSearches().length > 0 || this.driveThruRpgToReview().length > 0);
 
   ngOnInit(): void {
     this.resetCompanionBarScroll();
