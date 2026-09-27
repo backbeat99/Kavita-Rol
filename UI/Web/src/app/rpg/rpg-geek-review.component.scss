@@ -143,9 +143,23 @@
   .preview-title h2 { font-size: 16px; }
   .compare-row { grid-template-columns: 1fr; }
   .compare-row > strong, .replace-choice { grid-column: 1; }
-  .compare-row > span { padding: 0 0 4px; }
-  .compare-row > span:nth-of-type(1)::before { content: 'Local: '; color: var(--rpg-muted); }
-  .compare-row > span:nth-of-type(2)::before { content: 'RPGGeek: '; color: var(--rpg-muted); }
+  .compare-row > span { max-height: none; overflow: visible; padding: 0 0 4px; }
+  .compare-row > span::before { content: attr(data-mobile-label) ': '; color: var(--rpg-muted); }
+}
+@media (pointer: coarse) {
+  .button,
+  .search-line input { min-height: 44px; }
+
+  .text-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 8px;
+  }
+
+  .replace-choice { min-height: 44px; align-items: center; }
+  .replace-choice input { width: 20px; height: 20px; flex: 0 0 auto; }
+  .crumbs a { display: inline-flex; align-items: center; min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }

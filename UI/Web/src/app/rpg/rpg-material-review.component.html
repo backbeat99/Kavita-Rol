@@ -90,7 +90,9 @@
         <ng-template #reviewRow let-volume>
           <article class="review-row">
             @if (isAdmin()) {
-              <input class="row-check" type="checkbox" [checked]="selectedIds().includes(volume.id)" (change)="toggleSelection(volume.id, $any($event.target).checked)" [attr.aria-label]="t('select-item', {name: volume.name})">
+              <label class="row-check-target">
+                <input class="row-check" type="checkbox" [checked]="selectedIds().includes(volume.id)" (change)="toggleSelection(volume.id, $any($event.target).checked)" [attr.aria-label]="t('select-item', {name: volume.name})">
+              </label>
             }
             <a class="item-cover" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]" [attr.aria-label]="t('open-item', {name: volume.name})">
               <img [src]="imageService.getVolumeCoverImage(volume.id)" [alt]="t('cover-alt', {name: volume.name})">

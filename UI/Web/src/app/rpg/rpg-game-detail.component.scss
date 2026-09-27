@@ -433,3 +433,27 @@
     grid-column: 2;
   }
 }
+
+@media (pointer: coarse) {
+  .game-actions .btn,
+  .review-actions .btn,
+  .publication-actions .btn,
+  .resource-row .btn,
+  .unclassified-row .btn {
+    min-height: 44px;
+  }
+
+  .game-crumb a,
+  .section-heading > a,
+  .details-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding-block: 0.25rem;
+  }
+
+  .item-title { min-height: 44px; padding-block: 12px; }
+  .unclassified-row > .item-main { display: flex; align-items: center; min-height: 44px; }
+}

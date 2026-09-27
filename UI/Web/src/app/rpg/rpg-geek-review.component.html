@@ -109,7 +109,7 @@
           <div class="compare-table">
             <div class="compare-head"><span>{{t('field')}}</span><span>{{t('your-record')}}</span><span>{{t('rpggeek-record')}}</span><span>{{t('action')}}</span></div>
             <div class="compare-row">
-              <strong>{{t('fields.title')}}</strong><span>{{volume().name}}</span><span>{{preview()!.product.title || t('empty-value')}}</span>
+              <strong>{{t('fields.title')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().name}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.title || t('empty-value')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replaceTitle')">
                 @if (isFieldLocked('replaceTitle')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replaceTitle')) { <input type="checkbox" [checked]="replacements().replaceTitle" (change)="setReplacement('replaceTitle', $any($event.target).checked)"><span>{{t('replace')}}</span> }
@@ -117,7 +117,7 @@
               </label>
             </div>
             <div class="compare-row">
-              <strong>{{t('fields.year')}}</strong><span>{{volume().rpgPublicationYear || t('empty-value')}}</span><span>{{preview()!.product.yearPublished || t('empty-value')}}</span>
+              <strong>{{t('fields.year')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().rpgPublicationYear || t('empty-value')}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.yearPublished || t('empty-value')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replaceYear')">
                 @if (isFieldLocked('replaceYear')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replaceYear')) { <input type="checkbox" [checked]="replacements().replaceYear" (change)="setReplacement('replaceYear', $any($event.target).checked)"><span>{{t('replace')}}</span> }
@@ -125,7 +125,7 @@
               </label>
             </div>
             <div class="compare-row">
-              <strong>{{t('fields.designers')}}</strong><span>{{volume().rpgWriters?.join(', ') || t('empty-value')}}</span><span>{{preview()!.product.designers.join(', ') || t('empty-value')}}</span>
+              <strong>{{t('fields.designers')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().rpgWriters?.join(', ') || t('empty-value')}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.designers.join(', ') || t('empty-value')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replaceWriters')">
                 @if (isFieldLocked('replaceWriters')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replaceWriters')) { <input type="checkbox" [checked]="replacements().replaceWriters" (change)="setReplacement('replaceWriters', $any($event.target).checked)"><span>{{t('replace')}}</span> }
@@ -133,7 +133,7 @@
               </label>
             </div>
             <div class="compare-row">
-              <strong>{{t('fields.publishers')}}</strong><span>{{volume().rpgPublishers?.join(', ') || t('empty-value')}}</span><span>{{preview()!.product.publishers.join(', ') || t('empty-value')}}</span>
+              <strong>{{t('fields.publishers')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().rpgPublishers?.join(', ') || t('empty-value')}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.publishers.join(', ') || t('empty-value')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replacePublishers')">
                 @if (isFieldLocked('replacePublishers')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replacePublishers')) { <input type="checkbox" [checked]="replacements().replacePublishers" (change)="setReplacement('replacePublishers', $any($event.target).checked)"><span>{{t('replace')}}</span> }
@@ -141,7 +141,7 @@
               </label>
             </div>
             <div class="compare-row summary-row">
-              <strong>{{t('fields.summary')}}</strong><span>{{volume().summary || t('empty-value')}}</span><span>{{preview()!.product.description || t('empty-value')}}</span>
+              <strong>{{t('fields.summary')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().summary || t('empty-value')}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.description || t('empty-value')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replaceSummary')">
                 @if (isFieldLocked('replaceSummary')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replaceSummary')) { <input type="checkbox" [checked]="replacements().replaceSummary" (change)="setReplacement('replaceSummary', $any($event.target).checked)"><span>{{t('replace')}}</span> }
@@ -149,7 +149,7 @@
               </label>
             </div>
             <div class="compare-row cover-row">
-              <strong>{{t('fields.cover')}}</strong><span>{{volume().coverImage ? t('cover-exists') : t('empty-value')}}</span><span>{{preview()!.product.imageUrl ? t('cover-proposed') : t('no-cover')}}</span>
+              <strong>{{t('fields.cover')}}</strong><span [attr.data-mobile-label]="t('your-record')">{{volume().coverImage ? t('cover-exists') : t('empty-value')}}</span><span [attr.data-mobile-label]="t('rpggeek-record')">{{preview()!.product.imageUrl ? t('cover-proposed') : t('no-cover')}}</span>
               <label class="replace-choice" [class.locked]="isFieldLocked('replaceCover')">
                 @if (isFieldLocked('replaceCover')) { <span>{{t('locked')}}</span> }
                 @else if (hasExistingValue('replaceCover') && preview()!.product.imageUrl) { <input type="checkbox" [checked]="replacements().replaceCover" (change)="setReplacement('replaceCover', $any($event.target).checked)"><span>{{t('replace')}}</span> }
