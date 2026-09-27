@@ -191,12 +191,12 @@ public class Series : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasMet
     /// <summary>
     /// Does this Series correspond to the given folder-derived parsed series key (name and format)?
     /// </summary>
-    public bool MatchesParsedSeries(ParsedSeries key)
+    public bool MatchesParsedSeries(ParsedSeries key, bool ignoreFormat = false)
     {
         return (NormalizedName.Equals(key.NormalizedName)
                 || NormalizedLocalizedName.Equals(key.NormalizedName)
                 || NormalizedOriginalName.Equals(key.NormalizedName))
-               && (Format == key.Format || Format == MangaFormat.Unknown);
+               && (ignoreFormat || Format == key.Format || Format == MangaFormat.Unknown);
     }
 
     public void ResetColorScape()

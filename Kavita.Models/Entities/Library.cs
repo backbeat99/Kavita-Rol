@@ -53,6 +53,10 @@ public class Library : IEntityDate, IHasCoverImage
     /// Should Kavita read metadata files from the library
     /// </summary>
     public bool EnableMetadata { get; set; } = true;
+    /// <summary>Enables the independent native DriveThruRPG provider for this library.</summary>
+    public bool EnableDriveThruRpgMetadata { get; set; }
+    /// <summary>Enables human-reviewed RPGGeek candidates for RPG publications in this library.</summary>
+    public bool EnableRpgGeekMetadata { get; set; }
     /// <summary>
     /// Should Kavita remove sort articles "The" for the sort name
     /// </summary>

@@ -5,6 +5,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   ElementRef,
   inject,
   input,
@@ -37,6 +38,7 @@ import {FilterUtilitiesService} from "../shared/_services/filter-utilities.servi
 import {Chapter, LooseLeafOrDefaultNumber} from "../_models/chapter";
 import {LibraryType} from "../_models/library/library";
 import {filter, tap} from "rxjs";
+import {finalize} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {translate, TranslocoDirective} from "@jsverse/transloco";
 import {FilterComparison} from "../_models/metadata/v2/filter-comparison";
@@ -65,6 +67,7 @@ import {EVENTS, MessageHubService} from "../_services/message-hub.service";
 import {CoverUpdateEvent} from "../_models/events/cover-update-event";
 import {ChapterRemovedEvent} from "../_models/events/chapter-removed-event";
 import {VolumeRemovedEvent} from "../_models/events/volume-removed-event";
+import {SeriesUpdateEvent} from "../_models/events/series-update-event";
 import {CardActionablesComponent} from "../_single-module/card-actionables/card-actionables.component";
 import {BulkOperationsComponent} from "../cards/bulk-operations/bulk-operations.component";
 import {CoverImageComponent} from "../_single-module/cover-image/cover-image.component";
@@ -91,6 +94,7 @@ import {ChapterCardComponent} from "../cards/chapter-card/chapter-card.component
 import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
 import {EntityTitleService} from "../_services/entity-title.service";
+import {DriveThruRpgMatchStatus, DriveThruRpgSearchResult, RpgMaterialType} from "../_models/rpg/rpg-catalog";
 
 interface VolumeCast extends IHasCast {
   characterLocked: boolean;
@@ -200,6 +204,46 @@ export class VolumeDetailComponent implements OnInit {
   series = getResolvedData(this.route, 'series');
   library = getResolvedData(this.route, 'library');
   libraryType = computed(() => this.library().type);
+  isRpgLibrary = computed(() => this.libraryType() === LibraryType.Rpg);
+  isRpgPublication = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.CoreManual && this.volume().rpgMaterialType <= RpgMaterialType.OtherPublication);
+  isRpgResource = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.Map);
+  showRpgVersionPicker = computed(() => this.isRpgPublication() && this.volume().chapters.length > 0);
+  rpgSelectedChapterId = signal<number | null>(null);
+  driveThruSearchQuery = signal('');
+  driveThruManualProductId = signal<number | null>(null);
+  driveThruCandidates = signal<DriveThruRpgSearchResult[]>([]);
+  driveThruSearchStarted = signal(false);
+  driveThruSearching = signal(false);
+  driveThruLinkingProductId = signal<number | null>(null);
+  driveThruRefreshing = signal(false);
+  driveThruRequestFailed = signal(false);
+  driveThruOperationQueued = signal(false);
+  private lastDriveThruVolumeId: number | null = null;
+  private readonly resetDriveThruStateOnVolumeChange = effect(() => {
+    const currentVolumeId = this.volume().id;
+    if (this.lastDriveThruVolumeId === null) {
+      this.lastDriveThruVolumeId = currentVolumeId;
+      return;
+    }
+    if (this.lastDriveThruVolumeId === currentVolumeId) return;
+
+    this.lastDriveThruVolumeId = currentVolumeId;
+    this.driveThruSearchQuery.set('');
+    this.driveThruManualProductId.set(null);
+    this.driveThruCandidates.set([]);
+    this.driveThruSearchStarted.set(false);
+    this.driveThruSearching.set(false);
+    this.driveThruLinkingProductId.set(null);
+    this.driveThruRefreshing.set(false);
+    this.driveThruRequestFailed.set(false);
+    this.driveThruOperationQueued.set(false);
+  });
+  readonly DriveThruRpgMatchStatus = DriveThruRpgMatchStatus;
+
+  rpgSelectedChapter = computed(() => {
+    const chapters = this.volume().chapters || [];
+    return chapters.find(chapter => chapter.id === this.rpgSelectedChapterId()) ?? chapters[0] ?? null;
+  });
 
   coverImage = computed(() => this.imageService.getVolumeCoverImage(this.volume().id));
 
@@ -360,6 +404,11 @@ export class VolumeDetailComponent implements OnInit {
 
 
   ngOnInit() {
+    if (this.isRpgLibrary()) {
+      const companionBar = this.document.querySelector<HTMLElement>('.companion-bar');
+      if (companionBar) companionBar.scrollTop = 0;
+    }
+
     this.mobileSeriesImgBackground = getComputedStyle(document.documentElement)
       .getPropertyValue('--mobile-series-img-background').trim();
 
@@ -392,6 +441,9 @@ export class VolumeDetailComponent implements OnInit {
 
         // remove the chapter from the tab
         this.navigateToSeries();
+      } else if (event.event === EVENTS.SeriesUpdated) {
+        const updatedSeries = event.payload as SeriesUpdateEvent;
+        if (updatedSeries.id === this.seriesId()) this.loadVolume();
       }
     });
 
@@ -452,8 +504,135 @@ export class VolumeDetailComponent implements OnInit {
 
   readVolume(incognitoMode: boolean = false) {
     if (!this.volume) return;
+    if (this.isRpgLibrary()) {
+      this.readSelectedRpgVersion(incognitoMode);
+      return;
+    }
 
     this.readerService.readVolume(this.libraryId(), this.seriesId(), this.volume(), incognitoMode);
+  }
+
+  selectRpgVersion(chapterId: number): void {
+    this.rpgSelectedChapterId.set(chapterId);
+  }
+
+  rpgVersionTitle(chapter: Chapter): string {
+    return chapter.titleName || chapter.title || chapter.files[0]?.filePath.split(/[\\/]/).pop() || chapter.range;
+  }
+
+  rpgFileName(path: string): string {
+    return path.split(/[\\/]/).pop() || path;
+  }
+
+  rpgFileExtension(path: string): string {
+    return path.split('.').pop()?.toUpperCase() || '';
+  }
+
+  setDriveThruSearchQuery(event: Event): void {
+    this.driveThruSearchQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  setDriveThruManualProductId(event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value);
+    this.driveThruManualProductId.set(Number.isInteger(value) && value > 0 ? value : null);
+  }
+
+  searchDriveThruRpgByGame(): void {
+    const title = this.series().name.trim();
+    if (!title) return;
+    this.driveThruSearchQuery.set(title);
+    this.searchDriveThruRpg();
+  }
+
+  linkDriveThruRpgById(): void {
+    const productId = this.driveThruManualProductId();
+    if (productId) this.linkDriveThruRpg({productId, title: String(productId)});
+  }
+
+  searchDriveThruRpg(): void {
+    if (!this.accountService.hasAdminRole() || !this.isRpgPublication() || !this.library().enableDriveThruRpgMetadata) return;
+
+    const volumeId = this.volumeId();
+    this.driveThruSearchStarted.set(true);
+    this.driveThruRequestFailed.set(false);
+    this.driveThruOperationQueued.set(false);
+    this.driveThruCandidates.set([]);
+    this.driveThruSearching.set(true);
+
+    this.volumeService.searchDriveThruRpgCandidates(volumeId, this.driveThruSearchQuery()).pipe(
+      finalize(() => {
+        if (this.volumeId() === volumeId) this.driveThruSearching.set(false);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: result => {
+        if (this.volumeId() !== volumeId) return;
+        this.driveThruCandidates.set(result.candidates);
+        this.volume.set({...this.volume(), driveThruRpgMatchStatus: result.status});
+      },
+      error: () => {
+        if (this.volumeId() !== volumeId) return;
+        this.driveThruRequestFailed.set(true);
+        this.volume.set({...this.volume(), driveThruRpgMatchStatus: DriveThruRpgMatchStatus.Failed});
+      }
+    });
+  }
+
+  linkDriveThruRpg(candidate: DriveThruRpgSearchResult): void {
+    if (!this.accountService.hasAdminRole() || !this.library().enableDriveThruRpgMetadata) return;
+
+    const volumeId = this.volumeId();
+    this.driveThruRequestFailed.set(false);
+    this.driveThruOperationQueued.set(false);
+    this.driveThruLinkingProductId.set(candidate.productId);
+    this.volumeService.linkDriveThruRpg(volumeId, candidate.productId).pipe(
+      finalize(() => {
+        if (this.volumeId() === volumeId) this.driveThruLinkingProductId.set(null);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => {
+        if (this.volumeId() !== volumeId) return;
+        this.volume.set({...this.volume(), driveThruRpgId: candidate.productId,
+          driveThruRpgMatchStatus: DriveThruRpgMatchStatus.Pending, driveThruRpgLastCheckedUtc: null});
+        this.driveThruManualProductId.set(null);
+        this.driveThruCandidates.set([]);
+        this.driveThruOperationQueued.set(true);
+      },
+      error: () => {
+        if (this.volumeId() === volumeId) this.driveThruRequestFailed.set(true);
+      }
+    });
+  }
+
+  refreshDriveThruRpg(): void {
+    if (!this.accountService.hasAdminRole() || !this.library().enableDriveThruRpgMetadata) return;
+
+    const volumeId = this.volumeId();
+    this.driveThruRequestFailed.set(false);
+    this.driveThruOperationQueued.set(false);
+    this.driveThruRefreshing.set(true);
+    this.volumeService.refreshDriveThruRpg(volumeId).pipe(
+      finalize(() => {
+        if (this.volumeId() === volumeId) this.driveThruRefreshing.set(false);
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => {
+        if (this.volumeId() !== volumeId) return;
+        this.volume.set({...this.volume(), driveThruRpgMatchStatus: DriveThruRpgMatchStatus.Pending});
+        this.driveThruOperationQueued.set(true);
+      },
+      error: () => {
+        if (this.volumeId() === volumeId) this.driveThruRequestFailed.set(true);
+      }
+    });
+  }
+
+  readSelectedRpgVersion(incognitoMode: boolean = false): void {
+    const chapter = this.rpgSelectedChapter();
+    if (!chapter) return;
+    this.readerService.readChapter(this.libraryId(), this.seriesId(), chapter, incognitoMode);
   }
 
   openEditModal() {

@@ -161,3 +161,7 @@ body {
 .kplus-offcanvas {
   --bs-offcanvas-width: 28rem;
 }
+
+body.rpg-game-detail-active .fullpage-background {
+  display: none;
+}

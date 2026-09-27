@@ -188,27 +188,47 @@ public class ReadingItemService : IReadingItemService
     /// <returns></returns>
     private ParseInfoResult Parse(string path, string rootPath, string libraryRoot, LibraryType type, bool enableMetadata)
     {
+        var comicInfo = GetComicInfo(path, enableMetadata);
+        ParseInfoResult parseResult;
         if (_comicVineParser.IsApplicable(path, type))
         {
-            return _comicVineParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, GetComicInfo(path, enableMetadata));
+            parseResult = _comicVineParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, comicInfo);
         }
-        if (_imageParser.IsApplicable(path, type))
+        else if (_imageParser.IsApplicable(path, type))
         {
-            return _imageParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, GetComicInfo(path, enableMetadata));
+            parseResult = _imageParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, comicInfo);
         }
-        if (_bookParser.IsApplicable(path, type))
+        else if (_bookParser.IsApplicable(path, type))
         {
-            return _bookParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, GetComicInfo(path, enableMetadata));
+            parseResult = _bookParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, comicInfo);
         }
-        if (_pdfParser.IsApplicable(path, type))
+        else if (_pdfParser.IsApplicable(path, type))
         {
-            return _pdfParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, GetComicInfo(path, enableMetadata));
+            parseResult = _pdfParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, comicInfo);
         }
-        if (_basicParser.IsApplicable(path, type))
+        else if (_basicParser.IsApplicable(path, type))
         {
-            return _basicParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, GetComicInfo(path, enableMetadata));
+            parseResult = _basicParser.Parse(path, rootPath, libraryRoot, type, enableMetadata, comicInfo);
+        }
+        else
+        {
+            return ParseInfoResult.FailedParse();
         }
 
-        return ParseInfoResult.FailedParse();
+        if (type != LibraryType.Rpg) return parseResult;
+        if (parseResult.Info is null) return ParseInfoResult.FailedParse();
+
+        var rpgInfo = RpgManualVersionParser.Prepare(parseResult.Info, path,
+            GetRpgSeriesFolder(rootPath, libraryRoot));
+        return ParseInfoResult.FromParserInfo(rpgInfo);
+    }
+
+    private static string? GetRpgSeriesFolder(string rootPath, string libraryRoot)
+    {
+        var relativePath = Path.GetRelativePath(libraryRoot, rootPath);
+        if (relativePath == ".") return null;
+
+        return relativePath.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries)[0];
     }
 }

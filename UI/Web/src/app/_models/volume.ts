@@ -4,6 +4,7 @@ import {IHasCover} from "./common/i-has-cover";
 import {IHasReadingTime} from "./common/i-has-reading-time";
 import {IHasProgress} from "./common/i-has-progress";
 import {IHasMetadataIds} from "./common/i-has-metadata-ids";
+import {DriveThruRpgMatchStatus, RpgGeekMatchStatus, RpgMaterialType} from "./rpg/rpg-catalog";
 
 export interface Volume extends IHasCover, IHasReadingTime, IHasProgress, IHasMetadataIds {
   id: number;
@@ -37,4 +38,20 @@ export interface Volume extends IHasCover, IHasReadingTime, IHasProgress, IHasMe
   comicVineId: string | null;
   mangaBakaId: number;
   cbrId: number;
+  rpgMaterialType: RpgMaterialType;
+  summary: string;
+  nameLocked: boolean;
+  summaryLocked: boolean;
+  rpgPublicationYear: number | null;
+  rpgPublicationYearLocked: boolean;
+  rpgWriters: string[];
+  rpgWritersLocked: boolean;
+  rpgPublishers: string[];
+  rpgPublishersLocked: boolean;
+  rpgGeekId: number | null;
+  rpgGeekMatchStatus: RpgGeekMatchStatus;
+  rpgGeekLastCheckedUtc: string | null;
+  driveThruRpgId: number | null;
+  driveThruRpgMatchStatus: DriveThruRpgMatchStatus;
+  driveThruRpgLastCheckedUtc: string | null;
 }

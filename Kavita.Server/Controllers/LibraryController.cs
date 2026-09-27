@@ -10,6 +10,7 @@ using Hangfire;
 using Kavita.API.Database;
 using Kavita.API.Repositories;
 using Kavita.API.Services;
+using Kavita.API.Services.Metadata;
 using Kavita.API.Services.Plus;
 using Kavita.API.Services.Scanner;
 using Kavita.API.Services.SignalR;
@@ -70,6 +71,7 @@ public class LibraryController(
         }
 
         ValidateMetadataProvider(dto.Type, dto.MetadataProvider);
+        ValidateRpgMetadataSettings(dto.Type, dto.EnableRpgGeekMetadata, dto.EnableDriveThruRpgMetadata);
 
         var library = new LibraryBuilder(dto.Name, dto.Type)
             .WithFolders(dto.Folders.Select(x => new FolderPath {Path = x}).Distinct().ToList())
@@ -94,6 +96,8 @@ public class LibraryController(
         library.RemovePrefixForSortName = dto.RemovePrefixForSortName;
         library.DefaultLanguage = dto.DefaultLanguage;
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata;
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata;
 
         // Override Scrobbling for Comic libraries since there are no providers to scrobble to
         if (library.Type == LibraryType.Comic)
@@ -415,8 +419,10 @@ public class LibraryController(
         if (sourceLibrary == null) return BadRequest("SourceLibraryId must exist");
 
         var libraries = await unitOfWork.LibraryRepository.GetLibraryForIdsAsync(dto.TargetLibraryIds, LibraryIncludes.ExcludePatterns | LibraryIncludes.FileTypes | LibraryIncludes.Folders, ct);
+        var librariesNeedingDriveThruRpgBackfill = new List<int>();
         foreach (var targetLibrary in libraries)
         {
+            var hadDriveThruRpgEnabled = targetLibrary.EnableDriveThruRpgMetadata;
             UpdateLibrarySettings(new UpdateLibraryDto
             {
                 Folders = targetLibrary.Folders.Select(s => s.Path),
@@ -430,6 +436,8 @@ public class LibraryController(
                 InheritWebLinksFromFirstChapter = sourceLibrary.InheritWebLinksFromFirstChapter,
                 DefaultLanguage = sourceLibrary.DefaultLanguage,
                 MetadataProvider = sourceLibrary.MetadataProvider,
+                EnableRpgGeekMetadata = sourceLibrary.EnableRpgGeekMetadata,
+                EnableDriveThruRpgMetadata = sourceLibrary.EnableDriveThruRpgMetadata,
                 ExcludePatterns = sourceLibrary.LibraryExcludePatterns.Select(p => p.Pattern).ToList(),
                 FolderWatching = sourceLibrary.FolderWatching,
                 ManageCollections = sourceLibrary.ManageCollections,
@@ -438,9 +446,20 @@ public class LibraryController(
                 IncludeInSearch = sourceLibrary.IncludeInSearch,
                 ManageReadingLists = sourceLibrary.ManageReadingLists,
             }, targetLibrary, dto.IncludeType);
+
+            if (!hadDriveThruRpgEnabled && targetLibrary.EnableDriveThruRpgMetadata)
+            {
+                librariesNeedingDriveThruRpgBackfill.Add(targetLibrary.Id);
+            }
         }
 
         await unitOfWork.CommitAsync(ct);
+
+        foreach (var libraryId in librariesNeedingDriveThruRpgBackfill)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(libraryId, CancellationToken.None));
+        }
 
         if (sourceLibrary.FolderWatching)
         {
@@ -662,6 +681,7 @@ public class LibraryController(
             return BadRequest(await localizationService.TranslateAsync(userId, "library-name-exists"));
 
         var originalFoldersCount = library.Folders.Count;
+        var hadDriveThruRpgMetadata = library.EnableDriveThruRpgMetadata;
 
         library.Name = newName;
         library.Folders = dto.Folders.Select(s => new FolderPath() {Path = s}).Distinct().ToList();
@@ -671,6 +691,12 @@ public class LibraryController(
         UpdateLibrarySettings(dto, library);
 
         if (!await unitOfWork.CommitAsync(ct)) return BadRequest(await localizationService.TranslateAsync(userId, "generic-library-update"));
+
+        if (!hadDriveThruRpgMetadata && library.EnableDriveThruRpgMetadata)
+        {
+            BackgroundJob.Enqueue<IDriveThruRpgMetadataService>(service =>
+                service.MatchUnmatchedVolumesInLibraryAsync(library.Id, CancellationToken.None));
+        }
 
         if (folderWatchingUpdate || originalFoldersCount != dto.Folders.Count() || typeUpdate)
         {
@@ -740,6 +766,7 @@ public class LibraryController(
         }
 
         ValidateMetadataProvider(library.Type, dto.MetadataProvider);
+        ValidateRpgMetadataSettings(library.Type, dto.EnableRpgGeekMetadata, dto.EnableDriveThruRpgMetadata);
 
         library.FolderWatching = dto.FolderWatching;
         library.IncludeInDashboard = dto.IncludeInDashboard;
@@ -753,6 +780,8 @@ public class LibraryController(
         library.InheritWebLinksFromFirstChapter = dto.InheritWebLinksFromFirstChapter;
         library.DefaultLanguage = dto.DefaultLanguage;
         library.MetadataProvider = dto.MetadataProvider;
+        library.EnableRpgGeekMetadata = dto.EnableRpgGeekMetadata;
+        library.EnableDriveThruRpgMetadata = dto.EnableDriveThruRpgMetadata;
 
         library.LibraryFileTypes = dto.FileGroupTypes
             .Select(t => new LibraryFileTypeGroup() {FileTypeGroup = t, LibraryId = library.Id})
@@ -769,9 +798,19 @@ public class LibraryController(
 
     private static void ValidateMetadataProvider(LibraryType type, MetadataProvider provider)
     {
+        // RPG libraries use independent providers and never participate in Kavita+ metadata matching.
+        if (type == LibraryType.Rpg) return;
         if (!KavitaPlusConfiguration.IsValidMetadataProviderForLibraryType(type, provider))
         {
             throw new KavitaException("invalid-metadata-provider");
+        }
+    }
+
+    private static void ValidateRpgMetadataSettings(LibraryType type, bool enableRpgGeek, bool enableDriveThruRpg)
+    {
+        if (type != LibraryType.Rpg && (enableRpgGeek || enableDriveThruRpg))
+        {
+            throw new KavitaException("rpg-provider-only-rpg-library");
         }
     }
 

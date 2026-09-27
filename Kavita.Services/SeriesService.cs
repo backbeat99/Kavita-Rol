@@ -555,12 +555,18 @@ public class SeriesService(
         var libraryType = await unitOfWork.LibraryRepository.GetLibraryTypeAsync(series.LibraryId, ct);
         var volumes = await unitOfWork.VolumeRepository.GetVolumesDtoAsync(seriesId, userId, ct: ct);
         var namingContext = await LocalizedNamingContext.CreateAsync(namingService, localizationService, userId, libraryType);
-        var bookTreatment = libraryType is LibraryType.Book or LibraryType.LightNovel;
+        var bookTreatment = libraryType is LibraryType.Book or LibraryType.LightNovel or LibraryType.Rpg;
 
         // For books, the Name of the Volume is remapped to the actual name of the book, rather than Volume number.
         var processedVolumes = new List<VolumeDto>();
         foreach (var volume in volumes)
         {
+            if (libraryType == LibraryType.Rpg)
+            {
+                processedVolumes.Add(volume);
+                continue;
+            }
+
             if (volume.IsLooseLeaf() || volume.IsSpecial())
             {
                 continue;
@@ -593,9 +599,12 @@ public class SeriesService(
 
         foreach (var chapter in chapters)
         {
-            chapter.Title = namingContext.FormatChapterTitle(chapter);
+            if (libraryType != LibraryType.Rpg)
+            {
+                chapter.Title = namingContext.FormatChapterTitle(chapter);
+            }
 
-            if (!chapter.IsSpecial) continue;
+            if (!chapter.IsSpecial || libraryType == LibraryType.Rpg) continue;
             specials.Add(chapter);
         }
 
@@ -801,7 +810,7 @@ public class SeriesService(
         // Estimation only makes sense for ongoing/ended manga/comics - books and light novels
         // don't follow predictable release patterns based on chapter creation dates
         if (series.Metadata.PublicationStatus is not (PublicationStatus.OnGoing or PublicationStatus.Ended) ||
-            (series.Library.Type is LibraryType.Book or LibraryType.LightNovel))
+            (series.Library.Type is LibraryType.Book or LibraryType.LightNovel or LibraryType.Rpg))
         {
             return _emptyExpectedChapter;
         }
@@ -938,6 +947,7 @@ public class SeriesService(
                 LibraryType.ComicVine => await localizationService.TranslateAsync(userId, "issue-num", "#", result.ChapterNumber),
                 LibraryType.Book => await localizationService.TranslateAsync(userId, "book-num", result.ChapterNumber),
                 LibraryType.LightNovel => await localizationService.TranslateAsync(userId, "book-num", result.ChapterNumber),
+                LibraryType.Rpg => await localizationService.TranslateAsync(userId, "version-num", result.ChapterNumber),
                 _ => await localizationService.TranslateAsync(userId, "chapter-num", result.ChapterNumber)
             };
         }
@@ -945,7 +955,8 @@ public class SeriesService(
         {
             // Volume-only numbering - common for omnibus editions or series without chapter breaks
             result.VolumeNumber = (int)highestVolumeNumber + 1;
-            result.Title = await localizationService.TranslateAsync(userId, "volume-num", result.VolumeNumber);
+            result.Title = await localizationService.TranslateAsync(userId,
+                series.Library.Type == LibraryType.Rpg ? "manual-num" : "volume-num", result.VolumeNumber);
         }
 
         return result;

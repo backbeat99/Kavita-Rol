@@ -2,11 +2,11 @@
 
   <app-bulk-operations [marginLeft]="12" [marginRight]="0" />
 
-  <div [ngStyle]="{'height': ScrollingBlockHeight}" class="main-container container-fluid" #scrollingBlock>
+  <div [ngStyle]="{'height': ScrollingBlockHeight}" class="main-container container-fluid" [class.rpg-volume-detail]="isRpgLibrary()" #scrollingBlock>
 
     <div class="row mb-0 mb-xl-3 info-container">
       <div [ngClass]="{'mobile-bg': mobileSeriesImgBackground}" class="image-container col-5 col-sm-6 col-md-5 col-lg-5 col-xl-2 col-xxl-2 col-xxxl-2 d-none d-sm-block mb-3 position-relative">
-        <app-cover-image [entity]="volume()" [coverImage]="coverImage()" [continueTitle]="continuePoint()" (read)="readVolume()" />
+        <app-cover-image [entity]="volume()" [coverImage]="coverImage()" [continueTitle]="continuePoint()" [readEnabled]="!isRpgLibrary()" [progressEnabled]="!isRpgResource()" (read)="readVolume()" />
       </div>
 
       <div class="col-xl-10 col-lg-7 col-md-12 col-xs-12 col-sm-12">
@@ -14,24 +14,37 @@
           <a routerLink="/library/{{libraryId()}}/series/{{seriesId()}}" class="dark-exempt btn-icon">{{series().name}}</a>
         </h4>
         <div class="subtitle mt-2 mb-2">
-            <span>
-              {{t('volume-num')}}
-              <app-entity-title [libraryType]="libraryType()" [entity]="volume()" [prioritizeTitleName]="true" />
-            </span>
+          @if (isRpgLibrary()) {
+            <span>{{isRpgPublication() ? t('rpg-publication-label') : (isRpgResource() ? t('rpg-resource-label') : t('rpg-unclassified-label'))}} · {{volume().name}}</span>
+          } @else {
+            <span>{{t('volume-num')}} <app-entity-title [libraryType]="libraryType()" [entity]="volume()" [prioritizeTitleName]="true" /></span>
+          }
         </div>
 
-        <app-metadata-detail-row [entity]="volumeCast()"
-                                 [ageRating]="maxAgeRating()"
-                                 [hasReadingProgress]="volume().pagesRead > 0"
-                                 [readingTimeEntity]="volume()"
-                                 [libraryType]="libraryType()"
-                                 [mangaFormat]="series().format"
-                                 [totalBytes]="size()"
-                                 [releaseYear]="(volume().chapters.at(0)?.releaseDate | utcToLocalDate)?.getFullYear()"
-                                 [totalReads]="totalReads()"
-        />
+        @if (!isRpgLibrary()) {
+          <app-metadata-detail-row [entity]="volumeCast()"
+                                   [ageRating]="maxAgeRating()"
+                                   [hasReadingProgress]="volume().pagesRead > 0"
+                                   [readingTimeEntity]="volume()"
+                                   [libraryType]="libraryType()"
+                                   [mangaFormat]="series().format"
+                                   [totalBytes]="size()"
+                                   [releaseYear]="(volume().chapters.at(0)?.releaseDate | utcToLocalDate)?.getFullYear()"
+                                   [totalReads]="totalReads()"
+          />
+        } @else {
+          <div class="rpg-meta-line">
+            @if (isRpgPublication() && !volume().rpgGeekId && library().enableRpgGeekMetadata && accountService.hasAdminRole()) {
+              <a class="btn btn-sm btn-outline-info" [routerLink]="['/library', libraryId(), 'series', seriesId(), 'volume', volumeId(), 'rpg-geek']">{{t('review-rpggeek-candidates')}}</a>
+            } @else if (volume().rpgGeekId) {
+              <span class="rpg-linked-state">{{t('rpggeek-linked', {id: volume().rpgGeekId})}}</span>
+            } @else if (isRpgPublication() && library().enableRpgGeekMetadata) {
+              <span class="rpg-muted-state">{{t('rpggeek-status-' + volume().rpgGeekMatchStatus)}}</span>
+            }
+          </div>
+        }
 
-        @if (volume().chapters.length === 1) {
+        @if (!isRpgLibrary() && volume().chapters.length === 1) {
           <div class="mt-2 mb-2">
             <app-external-rating [seriesId]="seriesId()"
                                  [ratings]="[]"
@@ -48,23 +61,27 @@
           <div class="row g-0">
             <div class="col-auto">
               <div class="btn-group">
-                <button type="button" class="btn btn-outline-primary" (click)="readVolume()">
-                    <span>
-                      <i class="{{readingProgressStatus() | readingProgressIconPipe}}" aria-hidden="true"></i>
-                      <span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe}}</span>
-                    </span>
-                </button>
-                <div class="btn-group" ngbDropdown role="group" display="dynamic" [attr.aria-label]="t('read-options-alt')">
-                  <button type="button" class="btn btn-outline-primary dropdown-toggle-split" ngbDropdownToggle></button>
-                  <div class="dropdown-menu" ngbDropdownMenu>
-                    <button ngbDropdownItem (click)="readVolume(true)">
-                        <span>
-                          <i class="fa fa-glasses" aria-hidden="true"></i>
-                          <span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe:true}}</span>
-                        </span>
-                    </button>
+                @if (!isRpgLibrary()) {
+                  <button type="button" class="btn btn-outline-primary" (click)="readVolume()">
+                      <span><i class="{{readingProgressStatus() | readingProgressIconPipe}}" aria-hidden="true"></i><span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe}}</span></span>
+                  </button>
+                  <div class="btn-group" ngbDropdown role="group" display="dynamic" [attr.aria-label]="t('read-options-alt')">
+                    <button type="button" class="btn btn-outline-primary dropdown-toggle-split" ngbDropdownToggle></button>
+                    <div class="dropdown-menu" ngbDropdownMenu>
+                      <button ngbDropdownItem (click)="readVolume(true)"><i class="fa fa-glasses" aria-hidden="true"></i><span class="read-btn--text ms-1">{{readingProgressStatus() | readingProgressStatusPipe:true}}</span></button>
+                    </div>
                   </div>
-                </div>
+                } @else {
+                  <button type="button" class="btn btn-outline-primary" [disabled]="!rpgSelectedChapter() || rpgSelectedChapter()?.pages === 0" (click)="readSelectedRpgVersion()">
+                    <i class="fa-solid fa-book-open me-1" aria-hidden="true"></i>{{isRpgResource() ? t('open-rpg-resource') : t('read-selected-version')}}
+                  </button>
+                  @if (isRpgPublication()) {
+                    <div class="btn-group" ngbDropdown role="group" display="dynamic" [attr.aria-label]="t('read-options-alt')">
+                      <button type="button" class="btn btn-outline-primary dropdown-toggle-split" ngbDropdownToggle></button>
+                      <div class="dropdown-menu" ngbDropdownMenu><button ngbDropdownItem (click)="readSelectedRpgVersion(true)"><i class="fa fa-glasses" aria-hidden="true"></i><span class="read-btn--text ms-1">{{t('read-incognito')}}</span></button></div>
+                    </div>
+                  }
+                }
               </div>
             </div>
 
@@ -72,8 +89,8 @@
 
             @if (accountService.hasAdminRole()) {
               <div class="col-auto ms-2">
-                <button class="btn btn-actions" (click)="openEditModal()" [ngbTooltip]="t('edit-series-alt')">
-                  <span><i class="fa fa-pen" aria-hidden="true"></i></span>
+                <button class="btn" [class.btn-outline-primary]="isRpgLibrary()" [class.btn-actions]="!isRpgLibrary()" (click)="openEditModal()" [ngbTooltip]="isRpgLibrary() ? '' : t('edit-series-alt')">
+                  <i class="fa fa-pen" aria-hidden="true"></i>@if (isRpgLibrary()) { <span class="ms-2">{{t('rpg-edit-metadata')}}</span> }
                 </button>
               </div>
             }
@@ -91,10 +108,150 @@
           </div>
         </div>
 
-        <div class="mt-2 mb-3">
-          <app-read-more [text]="volume().chapters[0].summary || ''" [useResponsiveLength]="true" />
-        </div>
+        @if (isRpgLibrary()) {
+          <section class="rpg-bibliography" [attr.aria-label]="t('rpg-bibliography')">
+            <h2>{{t('rpg-bibliography')}}</h2>
+            <dl class="rpg-bibliography-grid">
+              <div><dt>{{t('rpg-title')}}</dt><dd>{{volume().name}}</dd></div>
+              <div><dt>{{t('rpg-year')}}</dt><dd>{{volume().rpgPublicationYear || t('rpg-empty')}}</dd></div>
+              <div><dt>{{t('rpg-writers')}}</dt><dd>{{volume().rpgWriters?.join(', ') || t('rpg-empty')}}</dd></div>
+              <div><dt>{{t('rpg-publishers')}}</dt><dd>{{volume().rpgPublishers?.join(', ') || t('rpg-empty')}}</dd></div>
+              @if (isRpgPublication()) {
+                <div><dt>{{t('rpggeek-id')}}</dt><dd>{{volume().rpgGeekId || t('rpggeek-not-linked')}}</dd></div>
+                <div><dt>{{t('drivethrurpg-id')}}</dt><dd>{{volume().driveThruRpgId || t('rpggeek-not-linked')}}</dd></div>
+              }
+            </dl>
+            <h3>{{t('rpg-summary')}}</h3>
+            @if (volume().summary) {
+              <app-read-more [text]="volume().summary" [useResponsiveLength]="true" />
+            } @else {
+              <p class="rpg-empty">{{t('rpg-empty')}}</p>
+            }
+          </section>
+        } @else {
+          <div class="mt-2 mb-3"><app-read-more [text]="volume().chapters[0]?.summary || ''" [useResponsiveLength]="true" /></div>
+        }
 
+        @if (isRpgPublication() && (library().enableDriveThruRpgMetadata || volume().driveThruRpgId)) {
+          <section class="rpg-drivethru-panel" aria-labelledby="drivethrurpg-heading">
+            <header class="rpg-provider-header">
+              <div>
+                <h2 id="drivethrurpg-heading">{{t('drivethrurpg-heading')}}</h2>
+                <p>{{t('drivethrurpg-help')}}</p>
+              </div>
+              <span class="rpg-provider-status" [attr.data-status]="volume().driveThruRpgMatchStatus">
+                {{t('drivethrurpg-status-' + volume().driveThruRpgMatchStatus)}}
+              </span>
+            </header>
+
+            @if (volume().driveThruRpgId) {
+              <p class="rpg-provider-linked">
+                {{t('drivethrurpg-linked-id', {id: volume().driveThruRpgId})}}
+                <a class="rpg-drivethru-external" [href]="'https://www.drivethrurpg.com/product/' + volume().driveThruRpgId"
+                   target="_blank" rel="noopener noreferrer">{{t('drivethrurpg-open-product')}}</a>
+              </p>
+            }
+
+            @if (accountService.hasAdminRole() && library().enableDriveThruRpgMetadata) {
+              @if (!volume().driveThruRpgId) {
+                <div class="rpg-drivethru-search">
+                  <label for="drivethrurpg-query">{{t('drivethrurpg-search-label')}}</label>
+                  <div class="rpg-drivethru-search-controls">
+                    <input id="drivethrurpg-query" type="search" autocomplete="off" [attr.placeholder]="volume().name"
+                           [value]="driveThruSearchQuery()" (input)="setDriveThruSearchQuery($event)"
+                           (keyup.enter)="searchDriveThruRpg()" [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null"
+                           [attr.aria-describedby]="'drivethrurpg-search-help'">
+                    <button class="btn btn-outline-primary" type="button" (click)="searchDriveThruRpg()"
+                            [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
+                      @if (driveThruSearching()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                      {{driveThruSearching() ? t('drivethrurpg-searching') : t('drivethrurpg-search')}}
+                    </button>
+                  </div>
+                  @if (series().name.trim() && series().name.trim() !== volume().name) {
+                    <button class="btn btn-link rpg-drivethru-game-search" type="button" (click)="searchDriveThruRpgByGame()"
+                            [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
+                      {{t('drivethrurpg-search-game-title')}}
+                    </button>
+                  }
+                  <p id="drivethrurpg-search-help">{{t('drivethrurpg-confirmation-note')}}</p>
+                  <div class="rpg-drivethru-manual">
+                    <label for="drivethrurpg-manual-id">{{t('drivethrurpg-manual-id-label')}}</label>
+                    <div class="rpg-drivethru-search-controls">
+                      <input id="drivethrurpg-manual-id" type="number" min="1" step="1" inputmode="numeric"
+                             [value]="driveThruManualProductId() || ''" (input)="setDriveThruManualProductId($event)"
+                             [disabled]="driveThruLinkingProductId() !== null">
+                      <button class="btn btn-outline-secondary" type="button" (click)="linkDriveThruRpgById()"
+                              [disabled]="!driveThruManualProductId() || driveThruLinkingProductId() !== null">
+                        {{t('drivethrurpg-link-by-id')}}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              @if (driveThruRequestFailed()) {
+                <p class="rpg-provider-error" role="alert">{{t('drivethrurpg-request-failed')}}</p>
+              }
+              @if (driveThruOperationQueued()) {
+                <p class="rpg-provider-notice" aria-live="polite">{{t('drivethrurpg-queued')}}</p>
+              }
+              @if (driveThruSearchStarted() && driveThruCandidates().length === 0 && !driveThruSearching() && !driveThruRequestFailed() && !volume().driveThruRpgId) {
+                <p class="rpg-provider-empty">{{t('drivethrurpg-no-candidates')}}</p>
+              }
+              @if (driveThruCandidates().length > 0) {
+                <ol class="rpg-drivethru-candidates" aria-label="{{t('drivethrurpg-results')}}">
+                  @for (candidate of driveThruCandidates(); track candidate.productId) {
+                    <li>
+                      <div class="rpg-candidate-copy">
+                        <strong>{{candidate.title}}</strong>
+                        <a class="rpg-drivethru-external" [href]="'https://www.drivethrurpg.com/product/' + candidate.productId"
+                           target="_blank" rel="noopener noreferrer">{{t('drivethrurpg-product-id', {id: candidate.productId})}}</a>
+                      </div>
+                      <button class="btn btn-outline-primary" type="button" (click)="linkDriveThruRpg(candidate)"
+                              [disabled]="driveThruLinkingProductId() !== null">
+                        @if (driveThruLinkingProductId() === candidate.productId) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                        {{driveThruLinkingProductId() === candidate.productId ? t('drivethrurpg-linking') : t('drivethrurpg-link')}}
+                      </button>
+                    </li>
+                  }
+                </ol>
+              }
+              @if (volume().driveThruRpgId) {
+                <button class="btn btn-outline-primary rpg-drivethru-refresh" type="button" (click)="refreshDriveThruRpg()"
+                        [disabled]="driveThruRefreshing()">
+                  @if (driveThruRefreshing()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                  {{driveThruRefreshing() ? t('drivethrurpg-refreshing') : t('drivethrurpg-refresh')}}
+                </button>
+              }
+            }
+          </section>
+        }
+
+        @if (showRpgVersionPicker()) {
+          <section class="rpg-version-picker" [attr.aria-label]="t('rpg-version-heading')">
+            <h2>{{t('rpg-version-heading')}}</h2>
+            <p>{{t('rpg-version-help')}}</p>
+            @for (chapter of volume().chapters; track chapter.id) {
+              <label class="rpg-version-option" [class.selected]="rpgSelectedChapter()?.id === chapter.id">
+                <input type="radio" name="rpg-version" [checked]="rpgSelectedChapter()?.id === chapter.id" (change)="selectRpgVersion(chapter.id)">
+                <span class="version-copy"><strong>{{rpgVersionTitle(chapter)}}</strong><small>{{chapter.language || t('version-language-not-set')}} · {{t('version-pages', {read: chapter.pagesRead, total: chapter.pages})}}</small></span>
+                <span class="version-progress">{{chapter.pagesRead > 0 && chapter.pagesRead < chapter.pages ? t('version-in-progress') : (chapter.pages > 0 && chapter.pagesRead >= chapter.pages ? t('version-complete') : t('version-unread'))}}</span>
+              </label>
+            }
+          </section>
+        }
+        @if (isRpgResource()) {
+          <section class="rpg-resource-files">
+            <h2>{{t('resource-file-heading')}}</h2>
+            @for (chapter of volume().chapters; track chapter.id) {
+              @for (file of chapter.files; track file.id) {
+                <div class="resource-file"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>{{rpgFileName(file.filePath)}}</span><small>{{rpgFileExtension(file.filePath)}}</small></div>
+              }
+            }
+          </section>
+        }
+
+        @if (!isRpgLibrary()) {
         <div class="mt-2">
           <div class="row g-0">
             <div class="col-6">
@@ -151,11 +308,12 @@
             </div>
           </div>
         </div>
-
+        }
 
       </div>
     </div>
 
+    @if (!isRpgLibrary()) {
     <div class="carousel-tabs-container mb-2">
       <ul ngbNav #nav="ngbNav" [(activeId)]="activeTabId" class="nav nav-tabs" (navChange)="onNavChange($event)">
         <li [ngbNavItem]="Tabs.Chapters">
@@ -243,7 +401,7 @@
     </div>
     <!-- Min height helps with scroll jerking when switching from chapter -> related/details -->
     <div [ngbNavOutlet]="nav" style="min-height: 18.75rem"></div>
-
+    }
 
     <app-loading [loading]="isLoading()" />
   </div>

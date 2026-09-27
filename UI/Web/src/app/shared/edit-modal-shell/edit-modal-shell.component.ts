@@ -3,6 +3,7 @@ import {
   Component,
   contentChild,
   contentChildren,
+  computed,
   DestroyRef,
   inject,
   input,
@@ -44,9 +45,10 @@ export class EditModalShellComponent {
   modalTitle = input.required<string>({ alias: 'title' });
 
   field = input.required<AnyField>();
+  saving = input(false);
 
   private readonly fieldView = toFieldView(this.field, this.destroyRef);
-  protected readonly canSave = this.fieldView.valid;
+  protected readonly canSave = computed(() => this.fieldView.valid() && !this.saving());
 
   activeTabId = model<Tabs>();
 

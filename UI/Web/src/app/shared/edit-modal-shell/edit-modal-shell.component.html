@@ -9,7 +9,7 @@
           {{ modalTitle() }}
         }
       </h4>
-      <button type="button" class="btn-close" [attr.aria-label]="t('close')" (click)="close.emit()"></button>
+      <button type="button" class="btn-close" [attr.aria-label]="t('close')" [disabled]="saving()" (click)="close.emit()"></button>
     </div>
 
     <div class="modal-body scrollable-modal" [class.d-flex]="!isMobile()">
@@ -37,8 +37,8 @@
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" (click)="close.emit()">{{ t('close') }}</button>
-      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save.emit()">{{ t('save') }}</button>
+      <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="close.emit()">{{ t('close') }}</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save.emit()">{{ saving() ? t('saving') : t('save') }}</button>
     </div>
 
   </div>

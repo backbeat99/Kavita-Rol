@@ -1,0 +1,133 @@
+<main class="rpg-game-detail" *transloco="let t; prefix: 'rpg-game-detail'">
+  <nav class="game-crumb" [attr.aria-label]="t('breadcrumb-label')">
+    <a [routerLink]="['/library', library().id]">{{library().name}}</a>
+    <span aria-hidden="true">/</span>
+    <span>{{t('games')}}</span>
+  </nav>
+
+  <header class="game-intro">
+    @if (coverImage()) {
+      <img class="game-cover" [src]="coverImage()" [alt]="t('game-cover-alt', {name: series().name})">
+    } @else {
+      <div class="game-cover cover-placeholder" aria-hidden="true"><i class="fa-solid fa-dice-d20"></i></div>
+    }
+    <div class="game-heading">
+      <h1>{{series().name}}</h1>
+      <p>{{t('subtitle')}}</p>
+    </div>
+    @if (isAdmin()) {
+      <div class="game-actions">
+        <button class="btn btn-outline-primary" type="button" [disabled]="isScanning()" (click)="scan()">
+          @if (isScanning()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+          {{isScanning() ? t('scanning') : t('scan-now')}}
+        </button>
+        <button class="btn btn-outline-primary" type="button" (click)="chooseCover.emit()">{{t('choose-cover')}}</button>
+      </div>
+    }
+  </header>
+
+  @if (isAdmin() && hasReviewWork()) {
+    <aside class="review-strip" aria-live="polite">
+      <div class="review-copy">
+        @if (unclassified().length > 0) {
+          <strong>{{unclassified().length === 1 ? t('review-pending-one') : t('review-pending-count', {count: unclassified().length})}}</strong>
+        }
+        @if (rpgGeekToReview().length > 0) {
+          <strong>{{rpgGeekToReview().length === 1 ? t('review-geek-one') : t('review-geek-count', {count: rpgGeekToReview().length})}}</strong>
+        }
+        @if (failedRpgGeekSearches().length > 0) {
+          <strong>{{failedRpgGeekSearches().length === 1 ? t('review-geek-failed-one') : t('review-geek-failed-count', {count: failedRpgGeekSearches().length})}}</strong>
+        }
+        @if (driveThruRpgToReview().length > 0) {
+          <strong>{{driveThruRpgToReview().length === 1 ? t('review-drivethrurpg-one') : t('review-drivethrurpg-count', {count: driveThruRpgToReview().length})}}</strong>
+        }
+        <span>{{t('review-description')}}</span>
+      </div>
+      <div class="review-actions">
+        @if (unclassified().length > 0) {
+          <a class="btn btn-outline-primary" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">
+            {{t('review-materials')}}
+          </a>
+        }
+        @if (rpgGeekToReview().length > 0 || failedRpgGeekSearches().length > 0) {
+          <a class="btn btn-outline-primary" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-geek-review']">
+            {{t('review-geek')}}
+          </a>
+        }
+        @if (driveThruRpgToReview().length > 0) {
+          <a class="btn btn-outline-primary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', driveThruRpgToReview()[0].id]">
+            {{t('review-drivethrurpg')}}
+          </a>
+        }
+      </div>
+    </aside>
+  }
+
+  @if (unclassified().length > 0) {
+    <section class="unclassified-section" aria-labelledby="unclassified-heading">
+      <h2 id="unclassified-heading">{{t('unclassified-title')}} <span class="count">{{unclassified().length}}</span></h2>
+      @for (volume of unclassified(); track volume.id) {
+        <article class="unclassified-row">
+          <img class="item-cover" [src]="imageService.getVolumeCoverImage(volume.id)" [alt]="t('item-cover-alt', {name: volume.name})">
+          <a class="item-main" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{volume.name}}</a>
+          <button class="btn btn-outline-primary" type="button" (click)="read(volume)">{{t('read')}}</button>
+        </article>
+      }
+    </section>
+  }
+
+  <div class="game-columns">
+    <section class="publication-section" aria-labelledby="publications-heading">
+      <header class="section-heading">
+        <h2 id="publications-heading">{{t('publications')}}</h2>
+        @if (isAdmin()) {
+          <a [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">{{t('classify-material')}}</a>
+        }
+      </header>
+
+      <div class="publication-list">
+        @for (volume of publications(); track volume.id) {
+          <article class="publication-row" [class.featured]="volume.rpgMaterialType === RpgMaterialType.CoreManual">
+            <img class="item-cover" [src]="imageService.getVolumeCoverImage(volume.id)" [alt]="t('item-cover-alt', {name: volume.name})">
+            <div class="item-main">
+              <a class="item-title" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{volume.name}}</a>
+              <span class="item-meta">{{materialLabel(volume)}}@if (fileFormats(volume)) { · {{fileFormats(volume)}} }</span>
+            </div>
+            <div class="publication-actions">
+              <button class="btn btn-outline-primary" type="button" (click)="read(volume)" [attr.aria-label]="t('read-item', {name: volume.name})">{{t('read')}}</button>
+              <a class="details-link" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{t('details')}}</a>
+            </div>
+          </article>
+        }
+        @if (publications().length === 0) {
+          <p class="empty-section">{{t('no-publications')}}</p>
+        }
+      </div>
+    </section>
+
+    <section class="resource-section" aria-labelledby="resources-heading">
+      <header class="section-heading">
+        <h2 id="resources-heading">{{t('resources')}}</h2>
+        @if (isAdmin()) {
+          <a [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">{{t('view-all')}}</a>
+        }
+      </header>
+
+      <div class="resource-list">
+        @for (volume of resources(); track volume.id) {
+          <article class="resource-row">
+            <img class="item-cover" [src]="imageService.getVolumeCoverImage(volume.id)" [alt]="t('item-cover-alt', {name: volume.name})">
+            <div class="item-main">
+              <a class="item-title" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{volume.name}}</a>
+              <span class="item-meta">{{materialLabel(volume)}}@if (fileFormats(volume)) { · {{fileFormats(volume)}} }</span>
+            </div>
+            <button class="btn btn-outline-primary" type="button" (click)="read(volume)" [attr.aria-label]="t('open-item', {name: volume.name})">{{t('open')}}</button>
+          </article>
+        }
+        @if (resources().length === 0) {
+          <p class="empty-section">{{t('no-resources')}}</p>
+        }
+      </div>
+    </section>
+  </div>
+</main>

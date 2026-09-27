@@ -23,7 +23,7 @@ public class PdfParser(IDirectoryService directoryService) : DefaultParser(direc
             HasEndMarker = Parser.HasEndMarker(fileName)
         };
 
-        if (type == LibraryType.Book)
+        if (type is LibraryType.Book or LibraryType.Rpg)
         {
             ret.Chapters = Parser.DefaultChapter;
         }
@@ -83,7 +83,8 @@ public class PdfParser(IDirectoryService directoryService) : DefaultParser(direc
         }
 
 
-        if (Parser.IsDefaultChapter(ret.Chapters) && Parser.IsLooseLeafVolume(ret.Volumes) && type == LibraryType.Book)
+        if (Parser.IsDefaultChapter(ret.Chapters) && Parser.IsLooseLeafVolume(ret.Volumes)
+            && type is (LibraryType.Book or LibraryType.Rpg))
         {
             ret.IsSpecial = true;
             ret.Chapters = Parser.DefaultChapter;
@@ -91,7 +92,7 @@ public class PdfParser(IDirectoryService directoryService) : DefaultParser(direc
             ParseFromFallbackFolders(filePath, rootPath, type, ref ret);
         }
 
-        if (type == LibraryType.Book && comicInfo != null)
+        if (type is (LibraryType.Book or LibraryType.Rpg) && comicInfo != null)
         {
             // For books, fall back to the Title for Series.
             if (!string.IsNullOrEmpty(comicInfo.Series))

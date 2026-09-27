@@ -1,0 +1,193 @@
+<main class="batch-review" *transloco="let t; prefix: 'rpg-geek-batch-review'">
+  <nav class="crumbs" [attr.aria-label]="t('breadcrumb')">
+    <a [routerLink]="['/library', library().id]">{{library().name}}</a><span aria-hidden="true">/</span>
+    <a [routerLink]="['/library', library().id, 'series', series().id]">{{series().name}}</a><span aria-hidden="true">/</span>
+    <span>{{t('title')}}</span>
+  </nav>
+
+  <header class="page-head">
+    <div>
+      <h1>{{t('title')}}</h1>
+      <p>{{t('intro')}}</p>
+    </div>
+    <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">{{t('back-to-materials')}}</a>
+  </header>
+
+  <ol class="steps" [attr.aria-label]="t('review-steps')">
+    <li><a [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">{{t('step-classification')}}</a></li>
+    <li class="current" aria-current="step"><span>{{t('step-candidates')}}</span></li>
+  </ol>
+
+  @if (!isAdmin()) {
+    <div class="notice warning" role="status">{{t('admin-only')}}</div>
+  } @else {
+    @if (batchError()) {
+      <div class="notice error" role="alert"><strong>{{t('error-title')}}</strong><span>{{batchError()}}</span></div>
+    }
+
+    <section class="review-toolbar">
+      <div>
+        <strong>{{t('publication-count', {count: items().length})}}</strong>
+        <span>{{t('linked-count', {count: linkedCount()})}}</span>
+        <p>{{t('confirmation-note')}}</p>
+      </div>
+      @if (searchingCount() > 0) { <span class="visually-hidden" role="status">{{t('searching-count', {count: searchingCount()})}}</span> }
+      @if (previewingCount() > 0) { <span class="visually-hidden" role="status">{{t('previewing-count', {count: previewingCount()})}}</span> }
+      <button class="button" type="button" [disabled]="isLoading() || searchingCount() > 0 || previewingCount() > 0 || isApplying() || items().length === 0" (click)="requeryAll()">
+        @if (searchingCount() > 0) { <span class="spinner" aria-hidden="true"></span> }
+        {{searchingCount() > 0 ? t('searching-count', {count: searchingCount()}) : (hasSearched() ? t('requery-all') : t('search-all'))}}
+      </button>
+    </section>
+
+    @if (isLoading()) {
+      <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>{{t('loading')}}</div>
+    } @else if (items().length === 0 && batchError()) {
+      <section class="empty-state">
+        <h2>{{t('load-error-title')}}</h2>
+        <p>{{t('errors.load-failed')}}</p>
+        <button class="button" type="button" (click)="retryLoad()">{{t('retry-load')}}</button>
+      </section>
+    } @else if (items().length === 0) {
+      <section class="empty-state">
+        <h2>{{t('empty-title')}}</h2>
+        <p>{{linkedCount() > 0 ? t('all-linked') : t('empty-body')}}</p>
+      </section>
+    } @else {
+      <section class="candidate-list" [attr.aria-label]="t('candidate-list-label')">
+        @for (item of items(); track item.volume.id) {
+          <article class="candidate-item" [attr.aria-busy]="item.isSearching || item.isPreviewing">
+            <header class="item-head">
+              <a class="local-publication" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id]">
+                <img [src]="imageService.getVolumeCoverImage(item.volume.id)" [alt]="t('local-cover-alt', {title: item.volume.name})">
+                <span class="local-title"><strong>{{item.volume.name}}</strong><small>{{item.volume.rpgPublicationYear || t('year-unknown')}}</small></span>
+              </a>
+              <div class="item-status">
+                <span class="status-tag" [class.status-warning]="item.status === RpgGeekMatchStatus.Ambiguous" [class.status-error]="item.status === RpgGeekMatchStatus.Failed">
+                  {{t('statuses.' + item.status)}}
+                </span>
+                <span class="rpg-id">{{t('local-id', {id: item.volume.id})}}</span>
+              </div>
+            </header>
+
+            @if (item.isSearching) {
+              <div class="loading inline" aria-hidden="true"><span class="spinner"></span>{{t('searching')}}</div>
+            } @else if (!item.hasSearched) {
+              <div class="no-candidate">
+                <p>{{t('search-first')}}</p>
+                <button class="button secondary" type="button" (click)="searchItem(item.volume.id)">{{t('search-item')}}</button>
+              </div>
+            } @else if (item.searchError) {
+              <div class="row-error"><span>{{item.searchError}}</span><button class="text-button" type="button" (click)="searchItem(item.volume.id, true)">{{t('retry-search')}}</button></div>
+            } @else if (item.status === RpgGeekMatchStatus.Ambiguous) {
+              <div class="ambiguous-note">
+                <p>{{t('ambiguous-individual')}}</p>
+                <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id, 'rpg-geek']">{{t('review-individually')}}</a>
+              </div>
+            } @else if (item.status === RpgGeekMatchStatus.Candidate) {
+              <div class="candidate-controls">
+                <label [for]="'candidate-' + item.volume.id">{{t('choose-candidate')}}</label>
+                <select [id]="'candidate-' + item.volume.id" [value]="item.selectedProductId ?? ''" (change)="selectCandidate(item.volume.id, $any($event.target).value)">
+                  <option value="">{{t('choose-candidate-placeholder')}}</option>
+                  @for (candidate of item.candidates; track candidate.id) {
+                    <option [value]="candidate.id">{{candidate.name}} · {{candidate.yearPublished || t('year-unknown')}} · #{{candidate.id}}</option>
+                  }
+                </select>
+                <button class="text-button" type="button" [disabled]="item.isSearching || item.isPreviewing" (click)="searchItem(item.volume.id, true)">{{t('requery-item')}}</button>
+              </div>
+
+              @if (item.isPreviewing) {
+                <div class="loading inline" aria-hidden="true"><span class="spinner"></span>{{t('loading-preview')}}</div>
+              } @else if (item.preview) {
+                <section class="preview" [attr.aria-label]="t('preview-for', {title: item.preview.product.title})">
+                  <header class="preview-head">
+                    @if (item.preview.product.imageUrl) {
+                      <img [src]="item.preview.product.imageUrl" [alt]="t('external-cover-alt', {title: item.preview.product.title})" referrerpolicy="no-referrer">
+                    } @else {
+                      <div class="external-cover-placeholder">{{t('no-cover')}}</div>
+                    }
+                    <div class="preview-title">
+                      <span>{{t('candidate-id', {id: item.preview.product.id})}}</span>
+                      <h3>{{item.preview.product.title}}</h3>
+                      <p>{{item.preview.product.yearPublished || t('year-unknown')}}</p>
+                    </div>
+                    <button class="text-button refresh-preview" type="button" [disabled]="item.isPreviewing" (click)="refreshPreview(item.volume.id)">{{t('refresh-preview')}}</button>
+                  </header>
+
+                  <div class="compare-grid" role="table" [attr.aria-label]="t('comparison-label')">
+                    <div class="compare-head" role="row"><span role="columnheader">{{t('field')}}</span><span role="columnheader">{{t('your-record')}}</span><span role="columnheader">{{t('rpggeek-record')}}</span><span role="columnheader">{{t('action')}}</span></div>
+                    <div class="compare-row" role="row">
+                      <strong role="rowheader">{{t('fields.title')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.name}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.title || t('empty-value')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replaceTitle')">
+                        @if (isFieldLocked(item, 'replaceTitle')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replaceTitle')) { <input type="checkbox" [checked]="item.replacements.replaceTitle" (change)="setReplacement(item.volume.id, 'replaceTitle', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                    <div class="compare-row" role="row">
+                      <strong role="rowheader">{{t('fields.year')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.rpgPublicationYear || t('empty-value')}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.yearPublished || t('empty-value')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replaceYear')">
+                        @if (isFieldLocked(item, 'replaceYear')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replaceYear')) { <input type="checkbox" [checked]="item.replacements.replaceYear" (change)="setReplacement(item.volume.id, 'replaceYear', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                    <div class="compare-row" role="row">
+                      <strong role="rowheader">{{t('fields.designers')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.rpgWriters?.join(', ') || t('empty-value')}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.designers.join(', ') || t('empty-value')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replaceWriters')">
+                        @if (isFieldLocked(item, 'replaceWriters')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replaceWriters')) { <input type="checkbox" [checked]="item.replacements.replaceWriters" (change)="setReplacement(item.volume.id, 'replaceWriters', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                    <div class="compare-row" role="row">
+                      <strong role="rowheader">{{t('fields.publishers')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.rpgPublishers?.join(', ') || t('empty-value')}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.publishers.join(', ') || t('empty-value')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replacePublishers')">
+                        @if (isFieldLocked(item, 'replacePublishers')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replacePublishers')) { <input type="checkbox" [checked]="item.replacements.replacePublishers" (change)="setReplacement(item.volume.id, 'replacePublishers', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                    <div class="compare-row summary-row" role="row">
+                      <strong role="rowheader">{{t('fields.summary')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.summary || t('empty-value')}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.description || t('empty-value')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replaceSummary')">
+                        @if (isFieldLocked(item, 'replaceSummary')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replaceSummary')) { <input type="checkbox" [checked]="item.replacements.replaceSummary" (change)="setReplacement(item.volume.id, 'replaceSummary', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                    <div class="compare-row cover-row" role="row">
+                      <strong role="rowheader">{{t('fields.cover')}}</strong><span role="cell" [attr.data-mobile-label]="t('your-record')"><span class="visually-hidden">{{t('your-record')}}: </span>{{item.volume.coverImage ? t('cover-exists') : t('empty-value')}}</span><span role="cell" [attr.data-mobile-label]="t('rpggeek-record')"><span class="visually-hidden">{{t('rpggeek-record')}}: </span>{{item.preview.product.imageUrl ? t('cover-proposed') : t('no-cover')}}</span>
+                      <label class="replace-choice" [class.locked]="isFieldLocked(item, 'replaceCover')">
+                        @if (isFieldLocked(item, 'replaceCover')) { <span>{{t('locked')}}</span> }
+                        @else if (hasExistingValue(item, 'replaceCover') && item.preview.product.imageUrl) { <input type="checkbox" [checked]="item.replacements.replaceCover" (change)="setReplacement(item.volume.id, 'replaceCover', $any($event.target).checked)"><span>{{t('replace')}}</span> }
+                        @else { <span class="fill-label">{{t('fill-empty')}}</span> }
+                      </label>
+                    </div>
+                  </div>
+
+                  <label class="include-choice">
+                    <input type="checkbox" [checked]="item.selectedForBatch" [disabled]="!item.preview || item.status !== RpgGeekMatchStatus.Candidate || isApplying()" (change)="setSelectedForBatch(item.volume.id, $any($event.target).checked)">
+                    <span>{{t('include-in-batch')}}</span>
+                  </label>
+                </section>
+              }
+            } @else {
+              <div class="no-candidate">
+                <p>{{item.status === RpgGeekMatchStatus.NoMatch ? t('no-match') : t('needs-search')}}</p>
+                <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id, 'rpg-geek']">{{t('search-individually')}}</a>
+              </div>
+            }
+          </article>
+        }
+      </section>
+
+      <footer class="batch-footer">
+        <div><strong>{{t('selection-summary', {selected: selectedCount(), ready: readyCount()})}}</strong><p>{{t('reading-available')}} {{t('batch-limit-note', {count: batchLimit})}}</p></div>
+        <button class="button primary" type="button" [disabled]="isApplying() || readyCount() === 0 || searchingCount() > 0 || previewingCount() > 0" (click)="confirmBatch()">
+          @if (isApplying()) { <span class="spinner dark" aria-hidden="true"></span> }
+          {{isApplying() ? t('confirming') : t('confirm-batch', {count: readyCount()})}}
+        </button>
+      </footer>
+    }
+  }
+</main>

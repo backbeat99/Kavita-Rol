@@ -1334,11 +1334,11 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
     /// <param name="ct"></param>
     /// <returns></returns>
     public Task<Series?> GetFullSeriesByAnyName(string seriesName, string localizedName, int libraryId,
-        MangaFormat format, bool withFullIncludes = true, CancellationToken ct = default)
+        MangaFormat format, bool withFullIncludes = true, CancellationToken ct = default, bool ignoreFormat = false)
     {
         var query = context.Series
             .Where(s => s.LibraryId == libraryId)
-            .Where(s => s.Format == format && format != MangaFormat.Unknown)
+            .Where(s => ignoreFormat || s.Format == format && format != MangaFormat.Unknown)
             .WhereSeriesNameMatches(seriesName, localizedName);
         if (!withFullIncludes)
         {
@@ -1472,11 +1472,11 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
     }
 
     public async Task<IList<Series>> GetAllSeriesByAnyNameAsync(string seriesName, string localizedName, int libraryId,
-        MangaFormat format, CancellationToken ct = default)
+        MangaFormat format, CancellationToken ct = default, bool ignoreFormat = false)
     {
         return await context.Series
             .Where(s => s.LibraryId == libraryId)
-            .Where(s => s.Format == format && format != MangaFormat.Unknown)
+            .Where(s => ignoreFormat || s.Format == format && format != MangaFormat.Unknown)
             .WhereSeriesNameMatches(seriesName, localizedName)
             .AsSplitQuery()
             .ToListAsync(ct);
@@ -1493,7 +1493,7 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
         string NormalizedLocalizedName, string NormalizedOriginalName);
 
     public async Task<IList<Series>> RemoveSeriesNotInListAsync(IList<ParsedSeries> seenSeries, int libraryId,
-        CancellationToken ct = default)
+        CancellationToken ct = default, bool ignoreFormat = false)
     {
         if (seenSeries.Count == 0) return Array.Empty<Series>();
 
@@ -1523,7 +1523,7 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
             if (!byName.TryGetValue(key.NormalizedName, out var matches)) continue;
 
             var best = matches
-                .Where(m => m.Format == key.Format || m.Format == MangaFormat.Unknown)
+                .Where(m => ignoreFormat || m.Format == key.Format || m.Format == MangaFormat.Unknown)
                 .OrderBy(m => m.Id)
                 .LastOrDefault();
             if (best != null) keepIds.Add(best.Id);

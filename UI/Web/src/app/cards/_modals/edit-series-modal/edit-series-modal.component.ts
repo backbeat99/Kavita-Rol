@@ -5,6 +5,7 @@ import {
   DestroyRef,
   EventEmitter,
   inject,
+  input,
   model,
   OnInit,
   signal
@@ -204,6 +205,7 @@ export class EditSeriesModalComponent implements OnInit {
   protected readonly isLoadingVolumes = signal<boolean>(false);
   protected readonly tasks = computed(() => this.actionFactoryService.getActionablesForSettingsPage(
     this.actionFactoryService.getSeriesActions(), blacklist));
+  initialTab = input<Tabs>(Tabs.General);
   protected readonly activeTabId = signal<Tabs>(Tabs.General);
   protected readonly libraryName = signal<string>('');
   protected readonly libraryType = signal<LibraryType>(LibraryType.Manga);
@@ -263,6 +265,7 @@ export class EditSeriesModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.activeTabId.set(this.initialTab());
     const series = this.series();
 
     this.formModel.update(m => ({

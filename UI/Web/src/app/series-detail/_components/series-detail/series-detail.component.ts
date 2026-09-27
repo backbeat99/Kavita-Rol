@@ -130,6 +130,7 @@ import {StatisticsService} from "../../../_services/statistics.service";
 import {ReadingHistoryItem} from "../../../_models/stats/reading-history-item";
 import {Pagination} from "../../../_models/pagination";
 import {Series} from "../../../_models/series";
+import {RpgGameDetailComponent} from "../../../rpg/rpg-game-detail.component";
 
 interface StoryLineItem {
   chapter?: ChapterCardEntity;
@@ -151,7 +152,8 @@ const READING_HISTORY_PAGE_SIZE = 10;
     TranslocoDirective, NgTemplateOutlet, NextExpectedCardComponent,
     NgClass, DetailsTabComponent, DefaultValuePipe, ExternalRatingComponent, ReadMoreComponent, RouterLink, BadgeExpanderComponent,
     PublicationStatusPipe, MetadataDetailRowComponent, DownloadButtonComponent, RelatedTabComponent, CoverImageComponent, ReviewsComponent,
-    AnnotationsTabComponent, ReadingProgressStatusPipePipe, ReadingProgressIconPipePipe, EntityCardComponent, TabTitlePipe, ReadingHistoryViewerComponent]
+    AnnotationsTabComponent, ReadingProgressStatusPipePipe, ReadingProgressIconPipePipe, EntityCardComponent, TabTitlePipe, ReadingHistoryViewerComponent,
+    RpgGameDetailComponent]
 })
 class SeriesDetailComponent implements OnInit, AfterViewInit {
 
@@ -896,9 +898,10 @@ class SeriesDetailComponent implements OnInit, AfterViewInit {
     }
   }
 
-  openEditSeriesModal() {
+  openEditSeriesModal(activeTab: Tabs = Tabs.General) {
     const modalRef = this.modalService.open(EditSeriesModalComponent);
     modalRef.setInput('series', this.series());
+    modalRef.setInput('initialTab', activeTab);
     modalRef.closed.subscribe((closeResult: ModalResult<Series>) => {
       if (closeResult.success) {
         window.scrollTo(0, 0);

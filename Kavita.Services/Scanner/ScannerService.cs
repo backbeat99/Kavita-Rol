@@ -19,6 +19,7 @@ using Kavita.Models.DTOs.KavitaPlus.Metadata;
 using Kavita.Models.DTOs.Settings;
 using Kavita.Models.DTOs.SignalR;
 using Kavita.Models.Entities;
+using Kavita.Models.Entities.Enums;
 using Kavita.Models.Parser;
 using Kavita.Services.Helpers;
 using Kavita.Services.Plus;
@@ -250,7 +251,7 @@ public class ScannerService(
         logger.LogInformation("ScanFiles for {Series} took {Time} milliseconds", series.Name, scanElapsedTime);
 
         // Remove any parsedSeries keys that don't belong to our series. This can occur when users store 2 series in the same folder
-        RemoveParsedInfosNotForSeries(parsedSeries, series);
+        RemoveParsedInfosNotForSeries(parsedSeries, series, library.Type);
 
         // If nothing was found, first validate any of the files still exist. If they don't then we have a deletion and can skip the rest of the logic flow
         if (parsedSeries.Count == 0)
@@ -413,10 +414,11 @@ public class ScannerService(
         return ScanCancelReason.NoCancel;
     }
 
-    private void RemoveParsedInfosNotForSeries(Dictionary<ParsedSeries, IList<ParserInfo>> parsedSeries, Series series)
+    private void RemoveParsedInfosNotForSeries(Dictionary<ParsedSeries, IList<ParserInfo>> parsedSeries,
+        Series series, LibraryType libraryType)
     {
         var keysToRemove = parsedSeries.Keys
-            .Where(key => !SeriesHelper.FindSeries(series, key))
+            .Where(key => !SeriesHelper.FindSeries(series, key, libraryType == LibraryType.Rpg))
             .ToList();
 
         foreach (var key in keysToRemove)
@@ -590,7 +592,8 @@ public class ScannerService(
         {
             logger.LogDebug("[ScannerService] Removing series that were not found during the scan");
 
-            var removedSeries = await unitOfWork.SeriesRepository.RemoveSeriesNotInListAsync(parsedSeries.Keys.ToList(), library.Id);
+            var removedSeries = await unitOfWork.SeriesRepository.RemoveSeriesNotInListAsync(
+                parsedSeries.Keys.ToList(), library.Id, ignoreFormat: library.Type == LibraryType.Rpg);
             logger.LogDebug("[ScannerService] Found {Count} series to remove: {SeriesList}",
                 removedSeries.Count, string.Join(", ", removedSeries.Select(s => s.Name)));
 

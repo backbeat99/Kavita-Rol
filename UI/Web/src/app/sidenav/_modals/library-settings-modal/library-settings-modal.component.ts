@@ -91,6 +91,8 @@ interface FormModel {
   allowMetadataMatching: boolean;
   collapseSeriesRelationships: boolean;
   enableMetadata: boolean;
+  enableRpgGeekMetadata: boolean;
+  enableDriveThruRpgMetadata: boolean;
   removePrefixForSortName: boolean;
   inheritWebLinksFromFirstChapter: boolean;
   defaultLanguage: string;
@@ -146,6 +148,8 @@ export class LibrarySettingsModalComponent implements OnInit {
     collapseSeriesRelationships: false,
     defaultLanguage: "",
     enableMetadata: false,
+    enableRpgGeekMetadata: false,
+    enableDriveThruRpgMetadata: false,
     excludePatterns: [],
     folderWatching: false,
     folders: [],
@@ -186,7 +190,10 @@ export class LibrarySettingsModalComponent implements OnInit {
     return this.formGroup().invalid() || (this.formGroup.folders().value().length === 0 && this.formGroup.fileGroupTypes().value().length === 0);
   });
 
+  selectedLibraryType = computed(() => this.formGroup.type().value());
+
   supportsMetadata = computed(() => {
+    if (this.selectedLibraryType() === LibraryType.Rpg) return false;
     if (this.validMetadataProviders.hasValue()) {
       return this.validMetadataProviders.value().length > 0;
     }
@@ -212,7 +219,7 @@ export class LibrarySettingsModalComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      if (!this.validMetadataProviders.hasValue()) return;
+      if (this.selectedLibraryType() === LibraryType.Rpg || !this.validMetadataProviders.hasValue()) return;
       const validMetadataProviders = this.validMetadataProviders.value();
       const selectedMetadataProvider = this.formModel().metadataProvider;
 
@@ -235,6 +242,10 @@ export class LibrarySettingsModalComponent implements OnInit {
       skip(1), // Skip setting library values on load
       tap(libraryType => {
         this.formGroup.fileGroupTypes().value.set(this.getLibraryFileTypes(libraryType));
+        if (libraryType !== LibraryType.Rpg) {
+          this.formGroup.enableRpgGeekMetadata().value.set(false);
+          this.formGroup.enableDriveThruRpgMetadata().value.set(false);
+        }
 
         if (this.scrobbleEnabledLibraries().includes(libraryType)) {
           this.formGroup.allowScrobbling().value.set(true);
@@ -285,6 +296,8 @@ export class LibrarySettingsModalComponent implements OnInit {
         return [FileTypeGroup.Images];
       case LibraryType.LightNovel:
         return [FileTypeGroup.Epub];
+      case LibraryType.Rpg:
+        return [FileTypeGroup.Archive, FileTypeGroup.Images, FileTypeGroup.Pdf];
     }
   }
 
@@ -301,6 +314,8 @@ export class LibrarySettingsModalComponent implements OnInit {
       collapseSeriesRelationships: library.collapseSeriesRelationships,
       defaultLanguage: library.defaultLanguage,
       enableMetadata: library.enableMetadata,
+      enableRpgGeekMetadata: library.enableRpgGeekMetadata,
+      enableDriveThruRpgMetadata: library.enableDriveThruRpgMetadata,
       excludePatterns: library.excludePatterns,
       folderWatching: library.folderWatching,
       folders: library.folders,

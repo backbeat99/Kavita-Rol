@@ -1,0 +1,11 @@
+.rpg-bibliography { max-width: 46rem; padding-bottom: 1rem; }
+.rpg-form-help { max-width: 68ch; margin: 0 0 1rem; color: var(--body-text-color); line-height: 1.5; }
+.rpg-field { display: grid; gap: .4rem; margin: 0 0 1.2rem; }
+.rpg-field > label:first-child { font-weight: 650; }
+.rpg-field > small { color: var(--body-text-color); }
+.rpg-lock { display: flex; align-items: center; gap: .5rem; width: fit-content; min-height: 2.5rem; cursor: pointer; font-size: .85rem; }
+.rpg-lock input { width: 1rem; height: 1rem; accent-color: #48c58f; }
+.rpg-external-id { border-top: 1px solid var(--border-color); padding: 1rem 0; }
+.rpg-external-id strong { display: block; }
+.rpg-external-id span { display: block; margin: .35rem 0; font-variant-numeric: tabular-nums; }
+.rpg-external-id p { max-width: 65ch; margin: 0; color: var(--body-text-color); font-size: .85rem; }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Interfaces;
 using Kavita.Models.Entities.MetadataMatching;
 
@@ -39,6 +40,30 @@ public class Volume : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasMet
 
     public string? CoverImage { get; set; }
     public bool CoverImageLocked { get; set; }
+
+    /// <summary>RPG-only manual classification. Existing and newly scanned items remain unclassified until chosen.</summary>
+    public RpgMaterialType RpgMaterialType { get; set; } = RpgMaterialType.Unclassified;
+    /// <summary>RPG bibliographic title can be locked against external metadata updates.</summary>
+    public bool NameLocked { get; set; }
+    public string Summary { get; set; } = string.Empty;
+    public bool SummaryLocked { get; set; }
+    /// <summary>Year-only bibliographic value; never synthesize a month or day from an external year.</summary>
+    public int? RpgPublicationYear { get; set; }
+    public bool RpgPublicationYearLocked { get; set; }
+    public IList<string> RpgWriters { get; set; } = [];
+    public bool RpgWritersLocked { get; set; }
+    public IList<string> RpgPublishers { get; set; } = [];
+    public bool RpgPublishersLocked { get; set; }
+
+    /// <summary>DriveThruRPG product ID associated explicitly with this RPG publication.</summary>
+    public int? DriveThruRpgId { get; set; }
+    public DriveThruRpgMatchStatus DriveThruRpgMatchStatus { get; set; } = DriveThruRpgMatchStatus.NotSearched;
+    public DateTime? DriveThruRpgLastCheckedUtc { get; set; }
+
+    /// <summary>RPGGeek item ID associated explicitly with this RPG publication.</summary>
+    public int? RpgGeekId { get; set; }
+    public RpgGeekMatchStatus RpgGeekMatchStatus { get; set; } = RpgGeekMatchStatus.NotSearched;
+    public DateTime? RpgGeekLastCheckedUtc { get; set; }
     public string PrimaryColor { get; set; }
     public string SecondaryColor { get; set; }
 

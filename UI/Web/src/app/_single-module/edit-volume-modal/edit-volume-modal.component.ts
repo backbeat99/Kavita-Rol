@@ -9,7 +9,7 @@ import {
   signal,
   untracked
 } from '@angular/core';
-import {form} from "@angular/forms/signals";
+import {form, FormField, max, maxLength, min, required} from '@angular/forms/signals';
 import {NgbActiveModal} from "@ng-bootstrap/ng-bootstrap";
 import {TranslocoDirective} from "@jsverse/transloco";
 import {SettingItemComponent} from "../../settings/_components/setting-item/setting-item.component";
@@ -26,6 +26,7 @@ import {UtcToLocalTimePipe} from "../../_pipes/utc-to-local-time.pipe";
 import {BytesPipe} from "../../_pipes/bytes.pipe";
 import {ReadTimePipe} from "../../_pipes/read-time.pipe";
 import {Volume} from "../../_models/volume";
+import {RpgMaterialType} from "../../_models/rpg/rpg-catalog";
 import {UtilityService} from "../../shared/_services/utility.service";
 import {ImageService} from "../../_services/image.service";
 import {UploadService} from "../../_services/upload.service";
@@ -35,14 +36,14 @@ import {DownloadService} from '../../shared/_services/download.service';
 import {DownloadEntityType} from '../../shared/_models/download-queue-item';
 import {LibraryType} from "../../_models/library/library";
 import {PersonRole} from "../../_models/metadata/person";
-import {map, of, switchMap} from "rxjs";
+import {finalize, map, of, switchMap} from "rxjs";
 import {BreakpointService} from "../../_services/breakpoint.service";
 import {ActionFactoryService} from "../../_services/action-factory.service";
 import {ActionItem} from "../../_models/actionables/action-item";
 import {Action} from "../../_models/actionables/action";
 import {modalDeleted, modalSaved} from "../../_models/modal/modal-result";
 import {VolumeService} from "../../_services/volume.service";
-import {UpdateVolumeRequest} from "../../_models/update-volume-request";
+import {RpgBibliographyUpdate, UpdateVolumeRequest} from "../../_models/update-volume-request";
 import {Tabs} from "../../_models/tabs";
 import {
   applyExternalMetadataIdRules,
@@ -50,12 +51,24 @@ import {
 } from "../../shared/_components/edit-external-metadata-form/edit-external-metadata-form.component";
 import {EditModalShellComponent} from "../../shared/edit-modal-shell/edit-modal-shell.component";
 import {EditTabDirective} from "../../shared/_directive/edit-tab.directive";
+import {FormFieldDirective} from "../../_directives/form-field.directive";
 import {MangaFormat} from "../../_models/manga-format";
-import {lockGroup, writeFieldLocks} from "../../_helpers/field-lock";
+import {lockGroup} from "../../_helpers/field-lock";
+import {LockableFieldComponent} from "../../shared/_components/lockable-field/lockable-field.component";
 
 interface FormModel {
+  coverImage: string;
   coverImageLocked: boolean;
-
+  name: string;
+  nameLocked: boolean;
+  summary: string;
+  summaryLocked: boolean;
+  rpgPublicationYear: number | null;
+  rpgPublicationYearLocked: boolean;
+  rpgWriters: string;
+  rpgWritersLocked: boolean;
+  rpgPublishers: string;
+  rpgPublishersLocked: boolean;
   aniListId: number;
   malId: number;
   hardcoverId: number;
@@ -66,7 +79,6 @@ interface FormModel {
 }
 
 const blacklist = [Action.Edit, Action.IncognitoRead, Action.AddToReadingList];
-
 
 @Component({
   selector: 'app-edit-volume-modal',
@@ -83,7 +95,10 @@ const blacklist = [Action.Edit, Action.IncognitoRead, Action.AddToReadingList];
     ReadTimePipe,
     EditExternalMetadataFormComponent,
     EditModalShellComponent,
-    EditTabDirective
+    EditTabDirective,
+    FormField,
+    FormFieldDirective,
+    LockableFieldComponent
   ],
   templateUrl: './edit-volume-modal.component.html',
   styleUrl: './edit-volume-modal.component.scss',
@@ -108,13 +123,26 @@ export class EditVolumeModalComponent {
   seriesId = input.required<number>();
 
   activeId = signal<Tabs>(Tabs.Info);
+  isSaving = signal(false);
+  saveError = signal(false);
 
-  private selectedCover: string = '';
+  private selectedCover = '';
   private coverImageReset = false;
   private coverImageDirty = false;
 
   private readonly formModel = signal<FormModel>({
+    coverImage: '',
     coverImageLocked: false,
+    name: '',
+    nameLocked: false,
+    summary: '',
+    summaryLocked: false,
+    rpgPublicationYear: null,
+    rpgPublicationYearLocked: false,
+    rpgWriters: '',
+    rpgWritersLocked: false,
+    rpgPublishers: '',
+    rpgPublishersLocked: false,
     aniListId: 0,
     malId: 0,
     hardcoverId: 0,
@@ -125,51 +153,51 @@ export class EditVolumeModalComponent {
   });
   formGroup = form(this.formModel, p => {
     applyExternalMetadataIdRules(p);
+    required(p.name);
+    maxLength(p.name, 500);
+    maxLength(p.summary, 10000);
+    min(p.rpgPublicationYear, 1000);
+    max(p.rpgPublicationYear, 9999);
   });
   protected readonly locks = lockGroup(this.formGroup, () => this.volume(), [
-    'coverImage',
+    'name', 'summary', 'rpgPublicationYear', 'rpgWriters', 'rpgPublishers', 'coverImage',
   ]);
   protected readonly chooserConfig = computed<CoverImageChooserConfig>(() => ({
     ...this.coverChooserConfigFactory.forVolume(this.volume(), this.libraryType()),
     isLocked: this.locks.coverImage()
   }));
 
-  tasks = computed(() => {
-    return this.actionFactoryService.getActionablesForSettingsPage(this.actionFactoryService.getVolumeActions(this.seriesId(), this.libraryId(), this.libraryType()), blacklist);
-  });
-
-  files = computed(() => {
-    const vol = this.volume();
-    if (!vol) return [];
-
-    return vol.chapters.flatMap(c => c.files);
-  });
-  size = computed(() => {
-    return this.files().reduce((sum, v) => sum + v.bytes, 0);
-  });
+  tasks = computed(() => this.actionFactoryService.getActionablesForSettingsPage(
+    this.actionFactoryService.getVolumeActions(this.seriesId(), this.libraryId(), this.libraryType()), blacklist));
+  files = computed(() => this.volume().chapters.flatMap(chapter => chapter.files));
+  size = computed(() => this.files().reduce((sum, file) => sum + file.bytes, 0));
 
   constructor() {
-    if (!this.accountService.hasAdminRole()) {
-      this.activeId.set(Tabs.Info);
-    }
-
     effect(() => {
-      untracked(() => {
-        this.formModel.set({
-          coverImageLocked: this.volume().coverImageLocked,
-          aniListId: this.volume().aniListId,
-          malId: this.volume().malId,
-          hardcoverId: this.volume().hardcoverId,
-          metronId: this.volume().metronId,
-          comicVineId: this.volume().comicVineId,
-          mangaBakaId: this.volume().mangaBakaId,
-          cbrId: this.volume().cbrId,
-        });
-      });
+      untracked(() => this.formModel.set({
+        coverImage: this.volume().coverImage ?? '',
+        coverImageLocked: this.volume().coverImageLocked,
+        name: this.volume().name,
+        nameLocked: this.volume().nameLocked,
+        summary: this.volume().summary ?? '',
+        summaryLocked: this.volume().summaryLocked,
+        rpgPublicationYear: this.volume().rpgPublicationYear,
+        rpgPublicationYearLocked: this.volume().rpgPublicationYearLocked,
+        rpgWriters: this.volume().rpgWriters?.join(', ') ?? '',
+        rpgWritersLocked: this.volume().rpgWritersLocked,
+        rpgPublishers: this.volume().rpgPublishers?.join(', ') ?? '',
+        rpgPublishersLocked: this.volume().rpgPublishersLocked,
+        aniListId: this.volume().aniListId,
+        malId: this.volume().malId,
+        hardcoverId: this.volume().hardcoverId,
+        metronId: this.volume().metronId,
+        comicVineId: this.volume().comicVineId,
+        mangaBakaId: this.volume().mangaBakaId,
+        cbrId: this.volume().cbrId,
+      }));
       this.locks.coverImage.set(this.volume().coverImageLocked);
     });
   }
-
 
   close() {
     if (this.coverImageReset) {
@@ -180,39 +208,70 @@ export class EditVolumeModalComponent {
   }
 
   save() {
+    if (this.isSaving() || this.formGroup().invalid()) return;
+
     const model = this.formModel();
+    const bibliography: RpgBibliographyUpdate = {
+      name: model.name.trim(),
+      nameLocked: this.locks.name(),
+      summary: model.summary,
+      summaryLocked: this.locks.summary(),
+      rpgPublicationYear: model.rpgPublicationYear,
+      rpgPublicationYearLocked: this.locks.rpgPublicationYear(),
+      rpgWriters: this.parseNames(model.rpgWriters),
+      rpgWritersLocked: this.locks.rpgWriters(),
+      rpgPublishers: this.parseNames(model.rpgPublishers),
+      rpgPublishersLocked: this.locks.rpgPublishers(),
+    };
+    const updateData: UpdateVolumeRequest = {
+      id: this.volume().id,
+      aniListId: model.aniListId,
+      malId: model.malId,
+      hardcoverId: model.hardcoverId,
+      metronId: model.metronId,
+      comicVineId: model.comicVineId,
+      mangaBakaId: model.mangaBakaId,
+      cbrId: model.cbrId,
+      coverImageLocked: this.locks.coverImage(),
+      ...(this.libraryType() === LibraryType.Rpg ? {rpgBibliography: bibliography} : {}),
+    };
 
-    const updateData = {id: this.volume().id, ...model} as UpdateVolumeRequest;
-    writeFieldLocks(updateData, this.locks);
-
+    this.isSaving.set(true);
+    this.saveError.set(false);
     this.volumeService.updateVolume(updateData).pipe(
-      switchMap(vol => this.coverImageDirty
-        ? this.uploadService.updateVolumeCoverImage(this.volume().id, this.selectedCover, true).pipe(map(() => vol))
-        : of(vol))
-    ).subscribe((v) => {
-      this.volume.set(v);
-      const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
-      this.modal.close(modalSaved(this.volume(), needsCoverUpdate));
+      switchMap(volume => this.coverImageDirty
+        ? this.uploadService.updateVolumeCoverImage(this.volume().id, this.selectedCover, true).pipe(map(() => volume))
+        : of(volume)),
+      finalize(() => this.isSaving.set(false))
+    ).subscribe({
+      next: volume => {
+        this.volume.set(volume);
+        const needsCoverUpdate = this.coverImageDirty || this.coverImageReset;
+        this.modal.close(modalSaved(this.volume(), needsCoverUpdate));
+      },
+      error: () => this.saveError.set(true)
     });
   }
 
+  private parseNames(value: string): string[] {
+    return value.split(',').map(name => name.trim()).filter(Boolean);
+  }
 
   async runTask(action: ActionItem<Volume>) {
     switch (action.action) {
       case Action.MarkAsRead:
-        this.actionService.markVolumeAsRead(this.seriesId(), this.volume(), (p) => {
-          this.volume.update(c => ({...c, pagesRead: p.pagesRead}));
+        this.actionService.markVolumeAsRead(this.seriesId(), this.volume(), progress => {
+          this.volume.update(current => ({...current, pagesRead: progress.pagesRead}));
         });
         break;
       case Action.MarkAsUnread:
-        this.actionService.markVolumeAsUnread(this.seriesId(), this.volume(), (p) => {
-          this.volume.update(c => ({...c, pagesRead: 0}));
+        this.actionService.markVolumeAsUnread(this.seriesId(), this.volume(), () => {
+          this.volume.update(current => ({...current, pagesRead: 0}));
         });
         break;
       case Action.Delete:
-        await this.actionService.deleteVolume(this.volume().id, (b) => {
-          if (!b) return;
-          this.modal.close(modalDeleted(this.volume()));
+        await this.actionService.deleteVolume(this.volume().id, deleted => {
+          if (deleted) this.modal.close(modalDeleted(this.volume()));
         });
         break;
       case Action.Download:
@@ -221,24 +280,25 @@ export class EditVolumeModalComponent {
     }
   }
 
-  handleCoverChanged(event: { isDirty: boolean; fileName: string }) {
+  handleCoverChanged(event: {isDirty: boolean; fileName: string}) {
     this.coverImageDirty = event.isDirty;
     this.selectedCover = event.fileName;
   }
 
   handleReset() {
     this.coverImageReset = true;
-    this.formModel.update(m => ({...m, coverImageLocked: false}));
+    this.formModel.update(model => ({...model, coverImageLocked: false}));
     this.locks.coverImage.set(false);
   }
 
   changeTab(tab?: Tabs) {
-    if (!tab) return;
-    this.activeId.set(tab);
+    if (tab) this.activeId.set(tab);
   }
 
   protected readonly Tabs = Tabs;
   protected readonly Action = Action;
   protected readonly PersonRole = PersonRole;
   protected readonly MangaFormat = MangaFormat;
+  protected readonly LibraryType = LibraryType;
+  protected readonly RpgMaterialType = RpgMaterialType;
 }

@@ -93,4 +93,6 @@ public sealed record LibraryDto : LiteLibraryDto
     /// <inheritdoc cref="Library.MetadataProvider"/>
     [EnumDataType(typeof(MetadataProvider))]
     public MetadataProvider MetadataProvider { get; init; }
+    public bool EnableRpgGeekMetadata { get; init; }
+    public bool EnableDriveThruRpgMetadata { get; init; }
 }
