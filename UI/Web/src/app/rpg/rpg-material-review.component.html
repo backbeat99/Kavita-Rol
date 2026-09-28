@@ -29,7 +29,6 @@
     <span>{{publicationCount()}} {{t('publications')}}</span>
     <span>{{resourceCount()}} {{t('resources')}}</span>
     <span class="needs-review">{{unclassifiedCount()}} {{t('unclassified')}}</span>
-    <span class="reader-note">{{t('reader-remains-available')}}</span>
   </div>
 
   @if (isLoading()) {
@@ -99,9 +98,10 @@
             </a>
             <div class="item-main">
               <a class="item-title" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">{{volume.name}}</a>
-              <div class="item-subtitle">{{t('files-count', {count: fileNames(volume).length})}}</div>
+              @let files = fileNames(volume);
+              <div class="item-subtitle">{{files.length === 1 ? t('file-count-one') : t('files-count', {count: files.length})}}</div>
               <div class="file-list">
-                @for (fileName of fileNames(volume); track $index) {
+                @for (fileName of files; track $index) {
                   <span class="file-chip">{{fileName}}</span>
                 }
               </div>
@@ -120,10 +120,8 @@
                 <small>{{volume.rpgGeekId ? t('linked-id', {id: volume.rpgGeekId}) : t('rpggeek-provider')}}</small>
               } @else if (typeFor(volume) >= RpgMaterialType.Map) {
                 <span class="state-label quiet-state">{{t('not-searched')}}</span>
-                <small>{{t('resource-never-searched')}}</small>
               } @else {
                 <span class="state-label quiet-state">{{t('not-classified')}}</span>
-                <small>{{t('search-after-classification')}}</small>
               }
             </div>
             <a class="open-link" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume.id]">
@@ -143,16 +141,6 @@
         }
       </section>
 
-      <aside class="guide-panel">
-        <h2>{{t('after-title')}}</h2>
-        <ol>
-          <li><strong>{{t('after-1-title')}}</strong><span>{{t('after-1-body')}}</span></li>
-          <li><strong>{{t('after-2-title')}}</strong><span>{{t('after-2-body')}}</span></li>
-          <li><strong>{{t('after-3-title')}}</strong><span>{{t('after-3-body')}}</span></li>
-        </ol>
-        <div class="inline-note"><span class="info-mark" aria-hidden="true">i</span><span>{{t('version-note')}}</span></div>
-        <p class="aside-foot">{{t('reader-remains-available')}}</p>
-      </aside>
     </div>
   }
 </main>

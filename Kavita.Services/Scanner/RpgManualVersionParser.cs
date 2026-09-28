@@ -35,6 +35,10 @@ internal static class RpgManualVersionParser
         }
 
         manualTitle = manualTitle.Trim(' ', '-', '_');
+        if (string.IsNullOrWhiteSpace(manualTitle))
+        {
+            manualTitle = string.IsNullOrWhiteSpace(gameFolder) ? fileTitle : gameFolder.Trim(' ', '-', '_');
+        }
         if (string.IsNullOrWhiteSpace(manualTitle)) return null;
 
         var format = info.Format switch
@@ -59,6 +63,8 @@ internal static class RpgManualVersionParser
 
     private static string RemoveVersionSuffix(string title, string marker)
     {
+        if (title.Equals(marker, StringComparison.OrdinalIgnoreCase)) return string.Empty;
+
         foreach (var separator in new[] { " - ", "_" })
         {
             var suffix = separator + marker;

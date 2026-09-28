@@ -48,6 +48,8 @@
 .status-warning { border-color: #76613c; background: #3d3322; color: #f1d59e; }
 .status-error { border-color: #734843; background: #352624; color: #f2d1ca; }
 .rpg-id { color: var(--rpg-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.individual-search { max-width: 23ch; color: #a9edc4; font-size: 12px; text-align: right; text-decoration: underline; text-underline-offset: 3px; }
+.individual-search:hover { color: #c4f5d7; }
 .candidate-controls { display: grid; grid-template-columns: minmax(160px, .4fr) minmax(240px, 1fr) auto; align-items: center; gap: 10px; padding: 12px 0; }
 .candidate-controls label { color: #dce5df; font-size: 12px; font-weight: 650; }
 .candidate-controls select { width: 100%; min-width: 0; min-height: 38px; border: 1px solid #4a5650; border-radius: 5px; padding: 7px 10px; background: #202422; color: #e5ece7; font: inherit; }
@@ -123,7 +125,8 @@
   .batch-review { padding-inline: 12px; }
   .steps li { padding: 9px 7px; font-size: 10px; }
   .item-head { flex-direction: column; }
-  .item-status { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+  .item-status { display: flex; width: 100%; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+  .individual-search { max-width: none; text-align: left; }
   .preview-head { grid-template-columns: 46px minmax(0, 1fr); gap: 9px; }
   .preview-head > img, .external-cover-placeholder { width: 46px; height: 58px; }
   .refresh-preview { grid-column: 2; justify-self: start; }
@@ -134,7 +137,8 @@
   .ambiguous-note, .no-candidate, .row-error { align-items: flex-start; flex-direction: column; }
 }
 @media (pointer: coarse) {
-  .button, .candidate-controls select, .text-button { min-height: 44px; }
+  .button, .candidate-controls select, .text-button, .individual-search { min-height: 44px; }
+  .individual-search { display: inline-flex; align-items: center; }
   .text-button { padding-inline: 8px; }
   .replace-choice, .include-choice { min-height: 44px; }
   .steps li { display: flex; min-height: 44px; align-items: center; }

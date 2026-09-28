@@ -31,6 +31,18 @@ public class RpgManualVersionParserTests
     }
 
     [Fact]
+    public void Version_marker_without_manual_title_uses_game_folder_as_identity()
+    {
+        var pages = Prepare("A Perfect Rock - Pages.pdf", MangaFormat.Pdf, "A Perfect Rock");
+        var spreads = Prepare("A Perfect Rock - Spreads.pdf", MangaFormat.Pdf, "A Perfect Rock");
+
+        Assert.Equal("A Perfect Rock", pages.Volumes);
+        Assert.Equal("A Perfect Rock", spreads.Volumes);
+        Assert.Equal("PDF (Pages)", pages.Title);
+        Assert.Equal("PDF (Spreads)", spreads.Title);
+    }
+
+    [Fact]
     public void Prepare_preserves_Spanish_language_metadata_for_Heart_manual()
     {
         var info = Prepare("Heart - Core Rulebook - Pages.pdf", MangaFormat.Pdf, "Heart",

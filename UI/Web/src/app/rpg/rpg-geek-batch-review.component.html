@@ -66,6 +66,7 @@
                   {{t('statuses.' + item.status)}}
                 </span>
                 <span class="rpg-id">{{t('local-id', {id: item.volume.id})}}</span>
+                <a class="individual-search" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id, 'rpg-geek']">{{t('search-individually')}}</a>
               </div>
             </header>
 
@@ -174,7 +175,6 @@
             } @else {
               <div class="no-candidate">
                 <p>{{item.status === RpgGeekMatchStatus.NoMatch ? t('no-match') : t('needs-search')}}</p>
-                <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id, 'rpg-geek']">{{t('search-individually')}}</a>
               </div>
             }
           </article>

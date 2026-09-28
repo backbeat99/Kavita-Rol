@@ -850,7 +850,7 @@
 
     "rpg-review": {
         "title": "Review game materials",
-        "intro": "Classify each item as a publication or an independent resource. This is a manual decision; scanning never guesses the type.",
+        "intro": "Choose a type for each item.",
         "back-to-game": "Back to game",
         "review-geek-batch": "Review RPGGeek candidates",
         "review-steps": "Review steps",
@@ -859,7 +859,6 @@
         "publications": "publications",
         "resources": "resources",
         "unclassified": "need classification",
-        "reader-remains-available": "Everything remains available to read while you review.",
         "loading": "Loading game materials…",
         "selected-count": "{{count}} selected",
         "bulk-type": "Assign one material type to selected items",
@@ -873,7 +872,8 @@
         "select-item": "Select {{name}}",
         "open-item": "Open {{name}}",
         "cover-alt": "Cover for {{name}}",
-        "files-count": "{{count}} files · versions keep their own language and reading progress",
+        "file-count-one": "1 file",
+        "files-count": "{{count}} files",
         "material-type": "Material type",
         "types": {
             "0": "Unclassified",
@@ -899,24 +899,14 @@
         },
         "linked-id": "RPGGeek ID {{id}}",
         "rpggeek-provider": "RPGGeek candidate review",
-        "resource-never-searched": "Resources are never sent to metadata providers.",
         "not-classified": "Not classified",
-        "search-after-classification": "Classify as a publication to search RPGGeek.",
         "open-resource": "Open resource",
         "open-publication": "Open publication",
-        "save-note": "Correct generic titles from the item details before classifying: saving a publication may start its RPGGeek search. Reading stays available.",
+        "save-note": "Saving publications may queue an RPGGeek search. You can correct titles later.",
         "saving": "Saving…",
         "save-classification": "Save classification",
         "saved": "Material classification saved.",
-        "save-failed": "Classification could not be saved. Check your connection and try again.",
-        "after-title": "What happens next",
-        "after-1-title": "You choose the material type",
-        "after-1-body": "Only a publication can be searched in RPGGeek. A search does not create a link.",
-        "after-2-title": "Review the candidate",
-        "after-2-body": "Compare the external record with your publication and choose which existing fields may change.",
-        "after-3-title": "Confirm the match",
-        "after-3-body": "The ID and selected metadata are saved only after you confirm.",
-        "version-note": "Each publication version keeps its own file, language and reading progress. Choose a version to read it directly."
+        "save-failed": "Classification could not be saved. Check your connection and try again."
     },
     "rpg-game-detail": {
         "breadcrumb-label": "Breadcrumb",
@@ -966,7 +956,7 @@
         "admin-only": "Only an administrator can search and apply provider metadata.",
         "manual-confirmation-note": "Search results are suggestions only. No match is created and no metadata is applied until you confirm the selected candidate.",
         "search-heading": "Find a candidate",
-        "search-help": "Search by publication title, or preview an RPGGeek product ID directly. If the local title is generic, return to the publication and use Edit metadata first.",
+        "search-help": "Search any title, even if it differs from the local one, or preview an RPGGeek ID. You do not need to fill in metadata first.",
         "search-label": "Publication title or RPGGeek ID",
         "search-placeholder": "Title, alternate title, or product ID",
         "search-button": "Search RPGGeek",
@@ -1050,13 +1040,13 @@
         "error-title": "Could not complete the request.",
         "publication-count": "{{count}} publications to review",
         "linked-count": "{{count}} already linked",
-        "confirmation-note": "If a local title is generic (e.g., ‘Core Book’), open it and correct its metadata before searching. Re-query bypasses the cache; searching and previewing never link records.",
+        "confirmation-note": "No metadata is required before searching. Only confirmation links a record.",
         "batch-limit-note": "Confirm up to {{count}} publications per batch.",
         "selection-limit": "The limit is {{count}} publications per batch. Confirm this group before selecting more.",
         "previewing-count": "Loading {{count}} previews…",
         "search-all": "Search candidates",
         "search-item": "Search this publication",
-        "search-first": "Check the local title before searching. If it is generic, open the publication, edit its metadata, then return here.",
+        "search-first": "Search this title or try another in the individual search.",
         "requery-all": "Re-query all",
         "searching-count": "Searching {{count}}…",
         "loading": "Loading publications…",
@@ -3992,7 +3982,7 @@
         "id-label": "{{edit-chapter-modal.id-label}}",
         "files-label": "{{edit-chapter-modal.files-label}}",
         "cover-image-description": "{{edit-series-modal.cover-image-description}}",
-        "rpg-metadata-help": "Correct the title (for example, ‘Core Book’) before searching RPGGeek. Save your changes, then review candidates again.",
+        "rpg-metadata-help": "You do not need to fill in metadata to search RPGGeek. Change the local title here only if it is incorrect.",
         "rpg-title": "Item title",
         "rpg-title-required": "Enter a title (500 characters maximum).",
         "rpg-summary": "Description",
@@ -4002,7 +3992,7 @@
         "rpg-publishers": "Publishers",
         "rpg-names-help": "Separate multiple names with commas.",
         "rpg-lock": "Protect from external data and scans",
-        "rpg-search-note": "Editing a field protects it automatically. Uncheck only if RPGGeek should replace it; an unprotected title can change again on a scan. Saving here never links a record.",
+        "rpg-search-note": "The lock protects a field from automatic updates; it does not prevent you from editing it. Edits turn protection on. Turn it off after editing only if RPGGeek may replace the value. Saving here does not link a record.",
         "rpg-save-error": "Not all changes could be saved. Check the fields and try again.",
         "rpggeek-id": "RPGGeek ID",
         "rpggeek-not-linked": "Not linked",
@@ -4044,7 +4034,7 @@
     },
 
     "locked-field": {
-        "field-locked-alt": "Field is locked"
+        "protect-field": "Protect field from automatic updates"
     },
 
 
