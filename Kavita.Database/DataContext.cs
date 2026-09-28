@@ -231,6 +231,10 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
             .HasDefaultValue(RpgMaterialType.Unclassified);
 
         builder.Entity<Volume>()
+            .Property(volume => volume.RpgVersionGroupLocked)
+            .HasDefaultValue(false);
+
+        builder.Entity<Volume>()
             .Property(volume => volume.RpgWriters)
             .HasJsonConversion(new List<string>())
             .HasColumnType("TEXT")

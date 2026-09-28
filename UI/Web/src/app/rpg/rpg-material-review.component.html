@@ -48,8 +48,47 @@
               }
             </select>
             <button class="button small" type="button" [disabled]="selectedIds().length === 0" (click)="applyBulkType()">{{t('assign-type')}}</button>
+            <button class="button small" type="button" [disabled]="!canGroupSelected() || isGrouping()" (click)="beginGrouping()">{{t('group-as-versions')}}</button>
             <button class="button small quiet" type="button" [disabled]="selectedIds().length === 0" (click)="selectAll(false)">{{t('clear-selection')}}</button>
+            @if (selectedIds().length > 0 && !canGroupSelected()) {
+              <p class="bulk-hint">{{hasDraftChanges() ? t('save-before-grouping') : t('group-selection-hint')}}</p>
+            }
           </div>
+
+          @if (showGroupingConfirmation()) {
+            <section class="group-confirmation" aria-labelledby="group-confirm-title">
+              <div class="group-copy">
+                <h2 id="group-confirm-title">{{t('group-confirm-title')}}</h2>
+                <p>{{t('group-confirm-help')}}</p>
+              </div>
+              <label for="group-primary-volume">{{t('group-primary-label')}}</label>
+              <select id="group-primary-volume" [value]="primaryVolumeId()" (change)="setPrimaryVolume($any($event.target).value)">
+                @for (volume of selectedVolumes(); track volume.id) {
+                  <option [value]="volume.id">{{groupPrimaryLabel(volume)}}</option>
+                }
+              </select>
+              <ul class="group-items" [attr.aria-label]="t('group-selected-items')">
+                @for (volume of selectedVolumes(); track volume.id) {
+                  <li [class.primary-item]="volume.id === primaryVolumeId()">
+                    <div class="group-item-copy">
+                      <span>{{volume.name}}</span>
+                      @if (volume.rpgGeekId != null) { <small>{{t('linked-id', {id: volume.rpgGeekId})}}</small> }
+                      @if (volume.driveThruRpgId != null) { <small>{{t('group-drivethrurpg-id', {id: volume.driveThruRpgId})}}</small> }
+                    </div>
+                    @if (volume.id === primaryVolumeId()) { <strong>{{t('group-primary-badge')}}</strong> }
+                  </li>
+                }
+              </ul>
+              @if (groupingError()) { <p class="group-error" role="alert">{{groupingError()}}</p> }
+              <div class="group-actions">
+                <button class="button small quiet" type="button" [disabled]="isGrouping()" (click)="cancelGrouping()">{{t('group-cancel')}}</button>
+                <button class="button small primary" type="button" [disabled]="isGrouping() || !primaryVolumeId()" (click)="confirmGrouping()">
+                  @if (isGrouping()) { <span class="button-spinner" aria-hidden="true"></span> }
+                  {{isGrouping() ? t('grouping') : t('group-confirm')}}
+                </button>
+              </div>
+            </section>
+          }
         }
 
         @if (unclassified().length > 0) {

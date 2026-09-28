@@ -42,6 +42,7 @@ public interface IDataContext : IDisposable
 
     DbSet<AppUserBookmark> AppUserBookmark { get; }
     DbSet<ReadingList> ReadingList { get; }
+    DbSet<ReadingListRemapRule> ReadingListRemapRule { get; }
     DbSet<ReadingListItem> ReadingListItem { get; }
     DbSet<Person> Person { get; }
     DbSet<PersonAlias> PersonAlias { get; }

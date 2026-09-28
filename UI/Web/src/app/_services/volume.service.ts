@@ -41,6 +41,18 @@ export class VolumeService {
     return this.httpClient.post<number[]>(this.baseUrl + 'volume/rpg/classify-batch', {seriesId, items});
   }
 
+  groupRpgPublicationVersions(seriesId: number, primaryVolumeId: number, volumeIds: number[]) {
+    return this.httpClient.post<void>(this.baseUrl + 'volume/rpg/group-versions', {
+      seriesId, primaryVolumeId, volumeIds
+    });
+  }
+
+  splitRpgPublicationVersion(seriesId: number, volumeId: number, chapterId: number, title: string) {
+    return this.httpClient.post<number>(this.baseUrl + 'volume/rpg/split-version', {
+      seriesId, volumeId, chapterId, title
+    });
+  }
+
   searchDriveThruRpgCandidates(volumeId: number, query: string) {
     const params = new URLSearchParams({volumeId: String(volumeId)});
     if (query.trim()) params.set('query', query.trim());

@@ -15,6 +15,7 @@ import {
   viewChild
 } from '@angular/core';
 import {DOCUMENT, Location, NgClass, NgStyle} from "@angular/common";
+import {HttpErrorResponse} from '@angular/common/http';
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {ImageService} from "../_services/image.service";
 import {ThemeService} from "../_services/theme.service";
@@ -95,6 +96,7 @@ import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
 import {EntityTitleService} from "../_services/entity-title.service";
 import {DriveThruRpgMatchStatus, DriveThruRpgSearchResult, RpgMaterialType} from "../_models/rpg/rpg-catalog";
+import {ToastrService} from '@openng/ngx-toastr';
 
 interface VolumeCast extends IHasCast {
   characterLocked: boolean;
@@ -192,6 +194,7 @@ export class VolumeDetailComponent implements OnInit {
   private readonly annotationService = inject(AnnotationService);
   protected readonly breakpointService = inject(BreakpointService);
   private readonly entityTitleService = inject(EntityTitleService);
+  private readonly toastr = inject(ToastrService);
 
   readonly scrollingBlock = viewChild<ElementRef<HTMLDivElement>>('scrollingBlock');
 
@@ -209,6 +212,11 @@ export class VolumeDetailComponent implements OnInit {
   isRpgResource = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.Map);
   showRpgVersionPicker = computed(() => this.isRpgPublication() && this.volume().chapters.length > 0);
   rpgSelectedChapterId = signal<number | null>(null);
+  readonly canManagePublicationVersions = computed(() => this.accountService.canCurrentUserInvokeAction(Action.Delete));
+  readonly splitVersionChapterId = signal<number | null>(null);
+  readonly splitVersionTitle = signal('');
+  readonly splitVersionSaving = signal(false);
+  readonly splitVersionError = signal('');
   driveThruSearchQuery = signal('');
   driveThruManualProductId = signal<number | null>(null);
   driveThruCandidates = signal<DriveThruRpgSearchResult[]>([]);
@@ -514,6 +522,45 @@ export class VolumeDetailComponent implements OnInit {
 
   selectRpgVersion(chapterId: number): void {
     this.rpgSelectedChapterId.set(chapterId);
+  }
+
+  beginSplitRpgVersion(chapter: Chapter): void {
+    const filePath = chapter.files[0]?.filePath ?? '';
+    const filename = filePath.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') ?? '';
+    const language = chapter.language?.trim();
+    this.splitVersionChapterId.set(chapter.id);
+    this.splitVersionTitle.set(language ? `${this.volume().name} (${language})` : filename || this.volume().name);
+    this.splitVersionError.set('');
+  }
+
+  cancelSplitRpgVersion(): void {
+    this.splitVersionChapterId.set(null);
+    this.splitVersionTitle.set('');
+    this.splitVersionError.set('');
+  }
+
+  confirmSplitRpgVersion(chapter: Chapter): void {
+    const title = this.splitVersionTitle().trim();
+    if (!title || this.splitVersionSaving()) return;
+
+    this.splitVersionSaving.set(true);
+    this.splitVersionError.set('');
+    this.volumeService.splitRpgPublicationVersion(this.seriesId(), this.volume().id, chapter.id, title).subscribe({
+      next: newVolumeId => {
+        this.cancelSplitRpgVersion();
+        this.toastr.success(translate('volume-detail.split-version-success'));
+        this.router.navigate(['library', this.libraryId(), 'series', this.seriesId(), 'volume', newVolumeId]);
+      },
+      error: error => {
+        const message = error instanceof HttpErrorResponse && typeof error.error === 'string'
+          ? error.error
+          : translate('volume-detail.split-version-failed');
+        this.splitVersionError.set(message);
+        this.toastr.error(message);
+        this.splitVersionSaving.set(false);
+      },
+      complete: () => this.splitVersionSaving.set(false)
+    });
   }
 
   rpgVersionTitle(chapter: Chapter): string {

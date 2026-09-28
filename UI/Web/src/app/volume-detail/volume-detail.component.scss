@@ -85,6 +85,8 @@
 }
 .rpg-version-picker h2, .rpg-resource-files h2 { margin: 0; font-size: 1.05rem; font-weight: 650; }
 .rpg-version-picker > p { margin: .3rem 0 .85rem; color: var(--body-text-color, #c5d0c9); font-size: .85rem; }
+.rpg-version-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: .55rem; margin-top: .55rem; }
+.rpg-version-picker > p + .rpg-version-row { margin-top: 0; }
 .rpg-version-option {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
@@ -96,9 +98,17 @@
   background: var(--body-bg-color, #1e2220);
   cursor: pointer;
 }
-.rpg-version-option + .rpg-version-option { margin-top: .55rem; }
 .rpg-version-option.selected { border-color: #54a879; background: #24352b; }
 .rpg-version-option input { width: 16px; height: 16px; margin: 0; accent-color: #48c58f; }
+.rpg-version-split { min-height: 44px; white-space: nowrap; }
+.rpg-split-panel { margin-top: .45rem; padding: .8rem; border: 1px solid var(--border-color, #414a44); border-radius: .35rem; background: #1a211d; }
+.rpg-split-panel > p:first-child { margin: 0 0 .6rem; color: #c5d0c9; font-size: .82rem; line-height: 1.45; }
+.rpg-split-panel label { display: block; margin-bottom: .3rem; font-size: .83rem; font-weight: 600; }
+.rpg-split-panel input { width: 100%; min-height: 44px; padding: .55rem .7rem; border: 1px solid #536058; border-radius: .35rem; background: #121714; color: var(--body-text-color, #e4eae6); }
+.rpg-split-panel input:focus-visible { outline: 2px solid var(--primary-color, #55c991); outline-offset: 2px; }
+.rpg-split-error { margin: .5rem 0 0; color: #ffb4a9; font-size: .82rem; }
+.rpg-split-actions { display: flex; justify-content: flex-end; gap: .55rem; margin-top: .7rem; }
+.rpg-split-actions .btn { min-height: 44px; }
 .version-copy { min-width: 0; }
 .version-copy strong { display: block; overflow-wrap: anywhere; font-size: .9rem; }
 .version-copy small { display: block; margin-top: .25rem; color: #bdc9c1; font-size: .75rem; }
@@ -116,7 +126,11 @@
   .rpg-drivethru-search-controls .btn, .rpg-drivethru-candidates .btn { width: 100%; }
   .rpg-drivethru-candidates li { align-items: stretch; flex-direction: column; }
   .rpg-bibliography-grid { grid-template-columns: 1fr; }
+  .rpg-version-row { grid-template-columns: minmax(0, 1fr); }
   .rpg-version-option { grid-template-columns: 17px minmax(0, 1fr); gap: .55rem; padding: .65rem; }
+  .rpg-version-split { width: 100%; }
+  .rpg-split-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rpg-split-actions .btn { min-height: 44px; padding-inline: .4rem; }
   .version-progress { grid-column: 2; }
 }
 

@@ -877,6 +877,9 @@ public class ProcessSeries(
 
     private Volume FindOrCreateRpgVolume(Series series, ParserInfo info)
     {
+        var manuallyGroupedVolume = FindManuallyGroupedRpgVolume(series, info);
+        if (manuallyGroupedVolume is not null) return manuallyGroupedVolume;
+
         var volumeName = info.Volumes;
         var volume = series.Volumes.FirstOrDefault(candidate =>
             string.Equals(candidate.LookupName, volumeName, StringComparison.OrdinalIgnoreCase));
@@ -899,20 +902,37 @@ public class ProcessSeries(
 
     private static Chapter FindOrCreateRpgChapter(Series series, Volume volume, ParserInfo info)
     {
-        var normalizedPath = Parser.NormalizePath(info.FullFilePath);
-        var existingChapter = series.Volumes
-            .SelectMany(candidate => candidate.Chapters)
-            .FirstOrDefault(chapter => chapter.Files.Any(file =>
-                string.Equals(Parser.NormalizePath(file.FilePath), normalizedPath, StringComparison.OrdinalIgnoreCase)));
+        var existingChapter = FindExistingRpgChapter(series, info);
         if (existingChapter is not null) return existingChapter;
 
         series.UpdateLastChapterAdded();
         return ChapterBuilder.FromParserInfo(info).Build();
     }
 
+    private static Chapter? FindExistingRpgChapter(Series series, ParserInfo info)
+    {
+        var normalizedPath = Parser.NormalizePath(info.FullFilePath);
+        return series.Volumes
+            .SelectMany(candidate => candidate.Chapters)
+            .FirstOrDefault(chapter => chapter.Files.Any(file =>
+                string.Equals(Parser.NormalizePath(file.FilePath), normalizedPath, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static Volume? FindManuallyGroupedRpgVolume(Series series, ParserInfo info)
+    {
+        var existingChapter = FindExistingRpgChapter(series, info);
+        if (existingChapter is null) return null;
+
+        return series.Volumes.FirstOrDefault(volume =>
+            volume.RpgVersionGroupLocked && volume.Id == existingChapter.VolumeId);
+    }
+
     internal void RehomeRpgVersions(Series series, IList<ParserInfo> parsedInfos)
     {
-        foreach (var group in parsedInfos.GroupBy(info => info.Volumes, StringComparer.OrdinalIgnoreCase))
+        var automaticallyGroupedInfos = parsedInfos
+            .Where(info => FindManuallyGroupedRpgVolume(series, info) is null);
+
+        foreach (var group in automaticallyGroupedInfos.GroupBy(info => info.Volumes, StringComparer.OrdinalIgnoreCase))
         {
             var target = series.Volumes.FirstOrDefault(volume =>
                 string.Equals(volume.LookupName, group.Key, StringComparison.OrdinalIgnoreCase));

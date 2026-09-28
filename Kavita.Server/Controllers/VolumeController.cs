@@ -23,6 +23,7 @@ namespace Kavita.Server.Controllers;
 
 public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService localizationService, IEventHub eventHub,
     IRpgMaterialClassificationService rpgMaterialClassificationService,
+    IRpgPublicationGroupingService rpgPublicationGroupingService,
     IRpgGeekMetadataService rpgGeekMetadataService,
     IDriveThruRpgMetadataService driveThruRpgMetadataService)
     : BaseApiController
@@ -116,6 +117,73 @@ public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService local
         }
 
         return Accepted(result.RpgGeekSearchVolumeIds);
+    }
+
+    /// <summary>
+    /// Combines selected RPG publications under the chosen identity, keeping each Chapter as an independently
+    /// readable version and preserving its progress.
+    /// </summary>
+    [HttpPost("rpg/group-versions")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult<RpgPublicationGroupingResult>> GroupRpgPublicationVersions(
+        GroupRpgPublicationVersionsDto dto)
+    {
+        var result = await rpgPublicationGroupingService.GroupVersionsAsync(
+            dto.SeriesId, dto.PrimaryVolumeId, dto.VolumeIds, HttpContext.RequestAborted);
+
+        if (!result.Succeeded)
+        {
+            var key = result.Error switch
+            {
+                RpgPublicationGroupingError.InvalidSelection => "rpg-group-invalid-selection",
+                RpgPublicationGroupingError.DuplicateVolumeIds => "rpg-group-duplicate-items",
+                RpgPublicationGroupingError.VolumeNotFound => "volume-doesnt-exist",
+                RpgPublicationGroupingError.WrongSeries => "rpg-group-wrong-game",
+                RpgPublicationGroupingError.NotRpgLibrary => "rpg-group-not-rpg-library",
+                RpgPublicationGroupingError.ResourceSelected => "rpg-group-resource-selected",
+                RpgPublicationGroupingError.ConflictingMaterialTypes => "rpg-group-conflicting-types",
+                RpgPublicationGroupingError.ConflictingProviderIds => "rpg-group-conflicting-provider-ids",
+                RpgPublicationGroupingError.ProviderIdentityNotPrimary => "rpg-group-provider-identity-not-primary",
+                RpgPublicationGroupingError.EmptyPublication => "rpg-group-empty-publication",
+                RpgPublicationGroupingError.SaveFailed => "rpg-group-save-failed",
+                _ => "generic-error"
+            };
+            return BadRequest(await localizationService.TranslateAsync(UserId, key));
+        }
+
+        foreach (var removedVolumeId in result.RemovedVolumeIds)
+        {
+            await eventHub.SendMessageAsync(MessageFactory.VolumeRemoved,
+                MessageFactory.VolumeRemovedEvent(removedVolumeId, dto.SeriesId), false, HttpContext.RequestAborted);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost("rpg/split-version")]
+    [Authorize(Policy = PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult<int>> SplitRpgPublicationVersion(SplitRpgPublicationVersionDto dto)
+    {
+        var result = await rpgPublicationGroupingService.SplitVersionAsync(
+            dto.SeriesId, dto.VolumeId, dto.ChapterId, dto.Title, HttpContext.RequestAborted);
+        if (!result.Succeeded)
+        {
+            var key = result.Error switch
+            {
+                RpgPublicationVersionSplitError.VolumeNotFound => "volume-doesnt-exist",
+                RpgPublicationVersionSplitError.WrongSeries => "rpg-group-wrong-game",
+                RpgPublicationVersionSplitError.NotRpgLibrary => "rpg-group-not-rpg-library",
+                RpgPublicationVersionSplitError.NotPublication => "rpg-group-resource-selected",
+                RpgPublicationVersionSplitError.VersionNotFound => "rpg-split-version-not-found",
+                RpgPublicationVersionSplitError.LastVersion => "rpg-split-last-version",
+                RpgPublicationVersionSplitError.InvalidTitle => "rpg-split-invalid-title",
+                RpgPublicationVersionSplitError.SaveFailed => "rpg-split-save-failed",
+                _ => "generic-error"
+            };
+            return BadRequest(await localizationService.TranslateAsync(UserId, key));
+        }
+
+        return Ok(result.NewVolumeId);
     }
 
     [HttpGet("rpg/geek/candidates")]

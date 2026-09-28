@@ -10,6 +10,7 @@ using Kavita.Models.Entities.Progress;
 using Kavita.Models.Metadata;
 using Kavita.Models.Parser;
 using Kavita.Services.Builders;
+using Kavita.Services.Metadata;
 using Kavita.Services.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -152,6 +153,90 @@ public class RpgScannerIntegrationTests : AbstractDbTest
             Assert.Equal(2, savedProgress.TotalReads);
             Assert.Equal("pages-version-scroll", savedProgress.BookScrollId);
             Assert.Equal(scannedPublication.Id, savedProgress.VolumeId);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ScanLibrary_Rpg_PreservesManuallyGroupedLanguageVersionsAcrossRescans()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var root = CreateRpgFiles();
+        var spanishPath = Path.Combine(root, "Pirate Borg", "Core Book Spanish.pdf");
+        File.WriteAllBytes(spanishPath, []);
+
+        try
+        {
+            var library = await CreateRpgLibrary(unitOfWork, root);
+            var scannerHelper = new ScannerHelper(unitOfWork, _testOutputHelper);
+            var scanner = scannerHelper.CreateServices();
+            await scanner.ScanLibrary(library.Id);
+
+            context.ChangeTracker.Clear();
+            var series = await context.Series
+                .Include(item => item.Volumes)
+                .ThenInclude(volume => volume.Chapters)
+                .ThenInclude(chapter => chapter.Files)
+                .SingleAsync(item => item.LibraryId == library.Id);
+            var primary = series.Volumes.Single(volume => volume.LookupName == "Core Book");
+            var spanish = series.Volumes.Single(volume => volume.LookupName == "Core Book Spanish");
+            primary.RpgMaterialType = RpgMaterialType.Manual;
+            spanish.RpgMaterialType = RpgMaterialType.Manual;
+            await context.SaveChangesAsync();
+            var versionIds = primary.Chapters.Concat(spanish.Chapters)
+                .SelectMany(chapter => chapter.Files.Select(file => (Path.GetFileName(file.FilePath), chapter.Id)))
+                .ToDictionary(item => item.Item1, item => item.Id);
+
+            var groupingService = new RpgPublicationGroupingService(unitOfWork);
+            var grouped = await groupingService.GroupVersionsAsync(series.Id, primary.Id, [primary.Id, spanish.Id]);
+            Assert.True(grouped.Succeeded);
+            Assert.True(primary.RpgVersionGroupLocked);
+
+            series.LastFolderScanned = DateTime.Now.AddMinutes(-5);
+            series.LastFolderScannedUtc = DateTime.UtcNow.AddMinutes(-5);
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+            await scanner.ScanLibrary(library.Id);
+
+            context.ChangeTracker.Clear();
+            var rescanned = await context.Series
+                .Include(item => item.Volumes)
+                .ThenInclude(volume => volume.Chapters)
+                .ThenInclude(chapter => chapter.Files)
+                .SingleAsync(item => item.LibraryId == library.Id);
+            var publication = Assert.Single(rescanned.Volumes, volume => volume.Id == primary.Id);
+            Assert.Equal(3, publication.Chapters.Count);
+            Assert.DoesNotContain(rescanned.Volumes, volume => volume.LookupName == "Core Book Spanish");
+            foreach (var chapter in publication.Chapters)
+            {
+                var filename = Path.GetFileName(Assert.Single(chapter.Files).FilePath);
+                Assert.Equal(versionIds[filename], chapter.Id);
+            }
+
+            var spanishChapter = publication.Chapters.Single(chapter =>
+                Path.GetFileName(Assert.Single(chapter.Files).FilePath) == "Core Book Spanish.pdf");
+            var split = await groupingService.SplitVersionAsync(
+                rescanned.Id, publication.Id, spanishChapter.Id, "Core Book Spanish");
+            Assert.True(split.Succeeded);
+            rescanned.LastFolderScanned = DateTime.Now.AddMinutes(-5);
+            rescanned.LastFolderScannedUtc = DateTime.UtcNow.AddMinutes(-5);
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+            await scanner.ScanLibrary(library.Id);
+
+            context.ChangeTracker.Clear();
+            var splitRescan = await context.Series
+                .Include(item => item.Volumes)
+                .ThenInclude(volume => volume.Chapters)
+                .ThenInclude(chapter => chapter.Files)
+                .SingleAsync(item => item.LibraryId == library.Id);
+            var separatePublication = Assert.Single(splitRescan.Volumes, volume => volume.Id == split.NewVolumeId);
+            Assert.Equal("Core Book Spanish", separatePublication.Name);
+            Assert.Equal(spanishChapter.Id, Assert.Single(separatePublication.Chapters).Id);
+            Assert.Equal(4, splitRescan.Volumes.Count);
         }
         finally
         {

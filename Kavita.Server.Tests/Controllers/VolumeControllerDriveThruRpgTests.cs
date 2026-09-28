@@ -44,6 +44,8 @@ public class VolumeControllerDriveThruRpgTests
             "rpg/drivethrurpg/candidates");
         AssertAdminEndpoint(nameof(VolumeController.LinkDriveThruRpg), "POST", "rpg/drivethrurpg/link");
         AssertAdminEndpoint(nameof(VolumeController.RefreshDriveThruRpgMetadata), "POST", "rpg/drivethrurpg/refresh");
+        AssertAdminEndpoint(nameof(VolumeController.GroupRpgPublicationVersions), "POST", "rpg/group-versions");
+        AssertAdminEndpoint(nameof(VolumeController.SplitRpgPublicationVersion), "POST", "rpg/split-version");
     }
 
     private static VolumeController CreateController(IDriveThruRpgMetadataService metadataService)
@@ -53,6 +55,7 @@ public class VolumeControllerDriveThruRpgTests
             Substitute.For<ILocalizationService>(),
             Substitute.For<IEventHub>(),
             Substitute.For<IRpgMaterialClassificationService>(),
+            Substitute.For<IRpgPublicationGroupingService>(),
             Substitute.For<IRpgGeekMetadataService>(),
             metadataService);
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };

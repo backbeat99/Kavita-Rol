@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {HttpErrorResponse} from '@angular/common/http';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, RouterLink} from '@angular/router';
@@ -50,9 +51,28 @@ export class RpgMaterialReviewComponent implements OnInit {
   readonly detail = signal<SeriesDetail | null>(null);
   readonly draftTypes = signal<Record<number, RpgMaterialType>>({});
   readonly selectedIds = signal<number[]>([]);
+  readonly selectedVolumes = computed(() => {
+    const selected = new Set(this.selectedIds());
+    return this.volumes().filter(volume => selected.has(volume.id));
+  });
+  readonly canGroupSelected = computed(() => {
+    const selected = this.selectedVolumes();
+    const publicationTypes = new Set(selected
+      .map(volume => volume.rpgMaterialType ?? RpgMaterialType.Unclassified)
+      .filter(type => type !== RpgMaterialType.Unclassified));
+    return selected.length >= 2 && publicationTypes.size <= 1 && !this.hasDraftChanges() && selected.every(volume => {
+      const type = volume.rpgMaterialType ?? RpgMaterialType.Unclassified;
+      return type === RpgMaterialType.Unclassified ||
+        (type >= RpgMaterialType.CoreManual && type <= RpgMaterialType.OtherPublication);
+    });
+  });
   readonly bulkType = signal<RpgMaterialType>(RpgMaterialType.Unclassified);
   readonly isLoading = signal(true);
   readonly isSaving = signal(false);
+  readonly isGrouping = signal(false);
+  readonly showGroupingConfirmation = signal(false);
+  readonly groupingError = signal('');
+  readonly primaryVolumeId = signal<number | null>(null);
   readonly volumes = computed(() => this.detail()?.volumes ?? []);
   readonly unclassified = computed(() => this.volumes().filter(volume => this.typeFor(volume) === RpgMaterialType.Unclassified));
   readonly publications = computed(() => this.volumes().filter(volume => this.typeFor(volume) >= RpgMaterialType.CoreManual && this.typeFor(volume) <= RpgMaterialType.OtherPublication));
@@ -79,20 +99,76 @@ export class RpgMaterialReviewComponent implements OnInit {
   }
 
   toggleSelection(volumeId: number, checked: boolean): void {
+    this.cancelGrouping();
     this.selectedIds.update(ids => checked ? [...new Set([...ids, volumeId])] : ids.filter(id => id !== volumeId));
   }
 
   selectAll(checked: boolean): void {
+    this.cancelGrouping();
     this.selectedIds.set(checked ? this.volumes().map(volume => volume.id) : []);
   }
 
   applyBulkType(): void {
     const selected = this.selectedIds();
     if (selected.length === 0) return;
+    this.cancelGrouping();
     this.draftTypes.update(types => {
       const updated = {...types};
       for (const id of selected) updated[id] = this.bulkType();
       return updated;
+    });
+  }
+
+  groupPrimaryLabel(volume: Volume): string {
+    const links = [
+      volume.rpgGeekId == null ? '' : `RPGGeek #${volume.rpgGeekId}`,
+      volume.driveThruRpgId == null ? '' : `DriveThruRPG #${volume.driveThruRpgId}`
+    ].filter(Boolean);
+    return links.length > 0 ? `${volume.name} · ${links.join(' · ')}` : volume.name;
+  }
+
+  beginGrouping(): void {
+    if (!this.canGroupSelected()) return;
+    this.primaryVolumeId.set(this.selectedVolumes()[0]?.id ?? null);
+    this.groupingError.set('');
+    this.showGroupingConfirmation.set(true);
+  }
+
+  setPrimaryVolume(value: string): void {
+    const id = Number(value);
+    this.primaryVolumeId.set(Number.isInteger(id) && id > 0 ? id : null);
+  }
+
+  cancelGrouping(): void {
+    this.showGroupingConfirmation.set(false);
+    this.groupingError.set('');
+    this.primaryVolumeId.set(null);
+  }
+
+  confirmGrouping(): void {
+    const primaryVolumeId = this.primaryVolumeId();
+    const volumeIds = this.selectedVolumes().map(volume => volume.id);
+    if (!primaryVolumeId || volumeIds.length < 2 || !this.canGroupSelected() || this.isGrouping()) return;
+
+    this.isGrouping.set(true);
+    this.groupingError.set('');
+    this.volumeService.groupRpgPublicationVersions(this.series().id, primaryVolumeId, volumeIds).subscribe({
+      next: () => {
+        this.selectedIds.set([]);
+        this.draftTypes.set({});
+        this.cancelGrouping();
+        this.toastr.success(translate('rpg-review.group-success'));
+        this.load();
+      },
+      error: error => {
+        const message = error instanceof HttpErrorResponse && typeof error.error === 'string'
+          ? error.error
+          : translate('rpg-review.group-failed');
+        this.groupingError.set(message);
+        this.toastr.error(message);
+        this.isGrouping.set(false);
+      },
+      complete: () => this.isGrouping.set(false)
     });
   }
 

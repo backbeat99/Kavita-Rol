@@ -43,6 +43,8 @@ public class Volume : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasMet
 
     /// <summary>RPG-only manual classification. Existing and newly scanned items remain unclassified until chosen.</summary>
     public RpgMaterialType RpgMaterialType { get; set; } = RpgMaterialType.Unclassified;
+    /// <summary>Preserves an administrator-defined publication/version grouping across rescans.</summary>
+    public bool RpgVersionGroupLocked { get; set; }
     /// <summary>RPG bibliographic title can be locked against external metadata updates.</summary>
     public bool NameLocked { get; set; }
     public string Summary { get; set; } = string.Empty;

@@ -97,6 +97,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IExternalMetadataService, ExternalMetadataService>();
         services.AddScoped<IRpgMaterialClassificationService, RpgMaterialClassificationService>();
+        services.AddScoped<IRpgPublicationGroupingService, RpgPublicationGroupingService>();
         services.AddScoped<IRpgGeekMetadataService, RpgGeekMetadataService>();
         services.AddHttpClient<IRpgGeekClient, RpgGeekClient>();
         services.AddScoped<IDriveThruRpgMetadataService, DriveThruRpgMetadataService>();

@@ -232,11 +232,33 @@
             <h2>{{t('rpg-version-heading')}}</h2>
             <p>{{t('rpg-version-help')}}</p>
             @for (chapter of volume().chapters; track chapter.id) {
-              <label class="rpg-version-option" [class.selected]="rpgSelectedChapter()?.id === chapter.id">
-                <input type="radio" name="rpg-version" [checked]="rpgSelectedChapter()?.id === chapter.id" (change)="selectRpgVersion(chapter.id)">
-                <span class="version-copy"><strong>{{rpgVersionTitle(chapter)}}</strong><small>{{chapter.language || t('version-language-not-set')}} · {{t('version-pages', {read: chapter.pagesRead, total: chapter.pages})}}</small></span>
-                <span class="version-progress">{{chapter.pagesRead > 0 && chapter.pagesRead < chapter.pages ? t('version-in-progress') : (chapter.pages > 0 && chapter.pagesRead >= chapter.pages ? t('version-complete') : t('version-unread'))}}</span>
-              </label>
+              <div class="rpg-version-row">
+                <label class="rpg-version-option" [class.selected]="rpgSelectedChapter()?.id === chapter.id">
+                  <input type="radio" name="rpg-version" [checked]="rpgSelectedChapter()?.id === chapter.id" (change)="selectRpgVersion(chapter.id)">
+                  <span class="version-copy"><strong>{{rpgVersionTitle(chapter)}}</strong><small>{{chapter.language || t('version-language-not-set')}} · {{t('version-pages', {read: chapter.pagesRead, total: chapter.pages})}}</small></span>
+                  <span class="version-progress">{{chapter.pagesRead > 0 && chapter.pagesRead < chapter.pages ? t('version-in-progress') : (chapter.pages > 0 && chapter.pagesRead >= chapter.pages ? t('version-complete') : t('version-unread'))}}</span>
+                </label>
+                @if (canManagePublicationVersions() && volume().chapters.length > 1) {
+                  <button class="btn btn-outline-secondary rpg-version-split" type="button" [disabled]="splitVersionSaving()" (click)="beginSplitRpgVersion(chapter)">
+                    {{t('split-version')}}
+                  </button>
+                }
+              </div>
+              @if (splitVersionChapterId() === chapter.id) {
+                <section class="rpg-split-panel" [attr.aria-label]="t('split-version-title')">
+                  <p>{{t('split-version-help')}}</p>
+                  <label [for]="'split-version-title-' + chapter.id">{{t('split-version-title')}}</label>
+                  <input [id]="'split-version-title-' + chapter.id" type="text" maxlength="200" [value]="splitVersionTitle()" (input)="splitVersionTitle.set($any($event.target).value)">
+                  @if (splitVersionError()) { <p class="rpg-split-error" role="alert">{{splitVersionError()}}</p> }
+                  <div class="rpg-split-actions">
+                    <button class="btn btn-outline-secondary" type="button" [disabled]="splitVersionSaving()" (click)="cancelSplitRpgVersion()">{{t('split-version-cancel')}}</button>
+                    <button class="btn btn-primary" type="button" [disabled]="splitVersionSaving() || !splitVersionTitle().trim()" (click)="confirmSplitRpgVersion(chapter)">
+                      @if (splitVersionSaving()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                      {{splitVersionSaving() ? t('split-version-saving') : t('split-version-confirm')}}
+                    </button>
+                  </div>
+                </section>
+              }
             }
           </section>
         }
