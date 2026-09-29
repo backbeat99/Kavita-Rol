@@ -54,16 +54,25 @@ public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService local
         var volume = await unitOfWork.VolumeRepository.GetVolumeByIdAsync(dto.Id, ct: ct);
         if (volume == null) return BadRequest(await localizationService.TranslateAsync(UserId, "volume-doesnt-exist"));
 
-        if (dto.RpgBibliography is not null)
+        if (dto.RpgBibliography is not null || dto.RpgExternalMetadataIds is not null)
         {
             var libraryType = await unitOfWork.DataContext.Volume
                 .Where(item => item.Id == volume.Id)
                 .Select(item => item.Series.Library.Type)
                 .FirstOrDefaultAsync(HttpContext.RequestAborted);
             if (libraryType != LibraryType.Rpg)
-                return BadRequest(await localizationService.TranslateAsync(UserId, "rpggeek-not-rpg-library"));
-            if (!RpgBibliographyEditor.TryApply(volume, dto.RpgBibliography))
+            {
+                var errorKey = dto.RpgBibliography is not null
+                    ? "rpggeek-not-rpg-library"
+                    : "rpg-provider-only-rpg-library";
+                return BadRequest(await localizationService.TranslateAsync(UserId, errorKey));
+            }
+
+            if (dto.RpgBibliography is not null && !RpgBibliographyEditor.TryApply(volume, dto.RpgBibliography))
                 return BadRequest(await localizationService.TranslateAsync(UserId, "rpg-bibliography-invalid"));
+            if (dto.RpgExternalMetadataIds is not null &&
+                !RpgExternalMetadataIdEditor.TryApply(volume, dto.RpgExternalMetadataIds))
+                return BadRequest(await localizationService.TranslateAsync(UserId, "rpg-external-id-invalid"));
         }
 
         ExternalMetadataIdHelper.SetExternalMetadataIds(volume, dto);

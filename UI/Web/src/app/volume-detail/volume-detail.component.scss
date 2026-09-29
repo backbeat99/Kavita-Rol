@@ -37,12 +37,24 @@
 .rpg-bibliography { max-width: 900px; margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid var(--border-color, #414a44); border-radius: .5rem; background: var(--card-bg-color, #202422); }
 .rpg-bibliography h2 { margin: 0 0 .85rem; font-size: 1.05rem; }
 .rpg-bibliography h3 { margin: 1rem 0 .35rem; font-size: .95rem; }
+.rpg-bibliography-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.rpg-bibliography-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1.5rem; }
+.rpg-bibliography-field { min-width: 0; }
+.rpg-bibliography-field > label { display: block; margin-bottom: .3rem; color: var(--body-text-color, #bdc9c1); font-size: .8rem; }
+.rpg-bibliography-field > small { display: block; margin-top: .3rem; color: var(--body-text-color, #bdc9c1); font-size: .75rem; }
+.rpg-bibliography-summary { margin-top: .9rem; }
+.rpg-bibliography-ids { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--border-color, #414a44); }
+.rpg-inline-save-error { margin: .75rem 0 0; color: var(--bs-danger, #ff8c8c); }
+.rpg-bibliography .input-group-text { cursor: help; }
+.rpg-bibliography .form-control:focus-visible { outline: 2px solid var(--primary-color, #55c991); outline-offset: 2px; }
+.rpg-bibliography .form-check-input { cursor: pointer; }
 .rpg-bibliography-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1.5rem; margin: 0; }
 .rpg-bibliography-grid div { min-width: 0; }
 .rpg-bibliography-grid dt { margin-bottom: .15rem; color: var(--body-text-color, #bdc9c1); font-size: .8rem; }
 .rpg-bibliography-grid dd { margin: 0; overflow-wrap: anywhere; font-size: .9rem; }
 .rpg-empty { color: var(--body-text-color, #bdc9c1); }
-.rpg-linked-state { color: #7bd5a2; }
+.rpg-linked-state { color: #7bd5a2; text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .15em; }
+.rpg-linked-state:focus-visible { outline: 2px solid var(--primary-color, #55c991); outline-offset: 3px; }
 .rpg-muted-state { color: #e0c07f; }
 .rpg-drivethru-panel {
   max-width: 900px;
@@ -125,7 +137,7 @@
   .rpg-drivethru-search-controls { grid-template-columns: 1fr; }
   .rpg-drivethru-search-controls .btn, .rpg-drivethru-candidates .btn { width: 100%; }
   .rpg-drivethru-candidates li { align-items: stretch; flex-direction: column; }
-  .rpg-bibliography-grid { grid-template-columns: 1fr; }
+  .rpg-bibliography-grid, .rpg-bibliography-edit-grid { grid-template-columns: 1fr; }
   .rpg-version-row { grid-template-columns: minmax(0, 1fr); }
   .rpg-version-option { grid-template-columns: 17px minmax(0, 1fr); gap: .55rem; padding: .65rem; }
   .rpg-version-split { width: 100%; }

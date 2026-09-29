@@ -124,18 +124,7 @@
     <!-- External Metadata IDs -->
     @if (accountService.hasAdminRole()) {
       <ng-template [appEditTab]="Tabs.ExternalMetadataIds">
-        <app-edit-external-metadata-form [field]="formGroup" />
-        @if (libraryType() === LibraryType.Rpg && volume().rpgMaterialType >= RpgMaterialType.CoreManual && volume().rpgMaterialType <= RpgMaterialType.OtherPublication) {
-          <div class="rpg-external-id">
-            <strong>{{t('rpggeek-id')}}</strong>
-            <span>{{volume().rpgGeekId || t('rpggeek-not-linked')}}</span>
-            <p>{{t('rpggeek-id-help')}}</p>
-          </div>
-          <div class="rpg-external-id">
-            <strong>{{t('drivethrurpg-id')}}</strong>
-            <span>{{volume().driveThruRpgId || t('rpggeek-not-linked')}}</span>
-          </div>
-        }
+        <app-edit-external-metadata-form [field]="formGroup" [includeRpgProviderIds]="canEditRpgProviderIds()" />
       </ng-template>
     }
 

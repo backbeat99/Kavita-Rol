@@ -1,6 +1,7 @@
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
 import {disabled, FieldTree, FormField, SchemaPathTree} from "@angular/forms/signals";
 import {IHasMetadataIds} from "../../../_models/common/i-has-metadata-ids";
+import {RpgExternalMetadataIds} from "../../../_models/rpg/rpg-catalog";
 import {TranslocoDirective} from "@jsverse/transloco";
 import {SettingItemComponent} from "../../../settings/_components/setting-item/setting-item.component";
 import {FormFieldDirective} from "../../../_directives/form-field.directive";
@@ -15,7 +16,7 @@ export const HAS_METADATA_DEFAULTS: Required<IHasMetadataIds> = {
   cbrId: 0
 };
 
-type MetadataIdKey = keyof IHasMetadataIds;
+type MetadataIdKey = keyof IHasMetadataIds | keyof RpgExternalMetadataIds;
 
 /** Call from the schema of any form whose model carries the metadata ids */
 export function applyExternalMetadataIdRules(p: SchemaPathTree<IHasMetadataIds>): void {
@@ -37,21 +38,23 @@ export function applyExternalMetadataIdRules(p: SchemaPathTree<IHasMetadataIds>)
 export class EditExternalMetadataFormComponent<T extends IHasMetadataIds> {
 
   field = input.required<FieldTree<T>>();
-
-  protected readonly metadataIds = Object.keys(HAS_METADATA_DEFAULTS) as MetadataIdKey[];
+  includeRpgProviderIds = input(false);
 
   protected readonly subFields = computed(() => {
-    const tree = this.field();
+    const keys = Object.keys(HAS_METADATA_DEFAULTS) as MetadataIdKey[];
+    if (this.includeRpgProviderIds()) keys.push('rpgGeekId', 'driveThruRpgId');
 
-    return this.metadataIds.map(key => {
-      const field = tree[key] as FieldTree<unknown>;
+    const tree = this.field() as unknown as Partial<Record<MetadataIdKey, FieldTree<unknown>>>;
+    return keys.flatMap(key => {
+      const field = tree[key];
+      if (!field) return [];
       // [formField] resolves the value type off the input element, so each branch needs the field typed to match
-      return {
+      return [{
         key,
         field,
         numberField: field as FieldTree<number | null>,
         textField: field as FieldTree<string>,
-      };
+      }];
     });
   });
 
@@ -59,4 +62,5 @@ export class EditExternalMetadataFormComponent<T extends IHasMetadataIds> {
     if (key === 'comicVineId') return 'text';
     return 'number';
   }
+
 }

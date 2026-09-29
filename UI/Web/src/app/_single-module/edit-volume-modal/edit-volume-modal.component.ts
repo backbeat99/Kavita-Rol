@@ -26,7 +26,7 @@ import {UtcToLocalTimePipe} from "../../_pipes/utc-to-local-time.pipe";
 import {BytesPipe} from "../../_pipes/bytes.pipe";
 import {ReadTimePipe} from "../../_pipes/read-time.pipe";
 import {Volume} from "../../_models/volume";
-import {RpgMaterialType} from "../../_models/rpg/rpg-catalog";
+import {RpgExternalMetadataIds, RpgMaterialType} from "../../_models/rpg/rpg-catalog";
 import {UtilityService} from "../../shared/_services/utility.service";
 import {ImageService} from "../../_services/image.service";
 import {UploadService} from "../../_services/upload.service";
@@ -56,7 +56,7 @@ import {MangaFormat} from "../../_models/manga-format";
 import {lockGroup} from "../../_helpers/field-lock";
 import {LockableFieldComponent} from "../../shared/_components/lockable-field/lockable-field.component";
 
-interface FormModel {
+interface FormModel extends RpgExternalMetadataIds {
   coverImage: string;
   coverImageLocked: boolean;
   name: string;
@@ -149,7 +149,9 @@ export class EditVolumeModalComponent {
     metronId: 0,
     comicVineId: null,
     mangaBakaId: 0,
-    cbrId: 0
+    cbrId: 0,
+    rpgGeekId: null,
+    driveThruRpgId: null
   });
   formGroup = form(this.formModel, p => {
     applyExternalMetadataIdRules(p);
@@ -158,10 +160,17 @@ export class EditVolumeModalComponent {
     maxLength(p.summary, 10000);
     min(p.rpgPublicationYear, 1000);
     max(p.rpgPublicationYear, 9999);
+    min(p.rpgGeekId, 1);
+    min(p.driveThruRpgId, 1);
   });
   protected readonly locks = lockGroup(this.formGroup, () => this.volume(), [
     'name', 'summary', 'rpgPublicationYear', 'rpgWriters', 'rpgPublishers', 'coverImage',
   ]);
+  protected readonly canEditRpgProviderIds = computed(() => {
+    const materialType = this.volume().rpgMaterialType;
+    return this.libraryType() === LibraryType.Rpg &&
+      materialType >= RpgMaterialType.CoreManual && materialType <= RpgMaterialType.OtherPublication;
+  });
   protected readonly chooserConfig = computed<CoverImageChooserConfig>(() => ({
     ...this.coverChooserConfigFactory.forVolume(this.volume(), this.libraryType()),
     isLocked: this.locks.coverImage()
@@ -194,6 +203,8 @@ export class EditVolumeModalComponent {
         comicVineId: this.volume().comicVineId,
         mangaBakaId: this.volume().mangaBakaId,
         cbrId: this.volume().cbrId,
+        rpgGeekId: this.volume().rpgGeekId,
+        driveThruRpgId: this.volume().driveThruRpgId,
       }));
       this.locks.coverImage.set(this.volume().coverImageLocked);
     });
@@ -234,6 +245,12 @@ export class EditVolumeModalComponent {
       cbrId: model.cbrId,
       coverImageLocked: this.locks.coverImage(),
       ...(this.libraryType() === LibraryType.Rpg ? {rpgBibliography: bibliography} : {}),
+      ...(this.canEditRpgProviderIds() ? {
+        rpgExternalMetadataIds: {
+          rpgGeekId: model.rpgGeekId,
+          driveThruRpgId: model.driveThruRpgId,
+        }
+      } : {}),
     };
 
     this.isSaving.set(true);

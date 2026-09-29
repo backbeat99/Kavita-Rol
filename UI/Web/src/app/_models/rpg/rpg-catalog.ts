@@ -34,6 +34,11 @@ export enum DriveThruRpgMatchStatus {
   Linked = 6
 }
 
+export interface RpgExternalMetadataIds {
+  rpgGeekId: number | null;
+  driveThruRpgId: number | null;
+}
+
 export interface RpgMaterialTypeUpdate {
   volumeId: number;
   materialType: RpgMaterialType;

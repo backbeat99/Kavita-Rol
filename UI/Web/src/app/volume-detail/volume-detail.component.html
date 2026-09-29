@@ -37,7 +37,11 @@
             @if (isRpgPublication() && !volume().rpgGeekId && library().enableRpgGeekMetadata && accountService.hasAdminRole()) {
               <a class="btn btn-sm btn-outline-info" [routerLink]="['/library', libraryId(), 'series', seriesId(), 'volume', volumeId(), 'rpg-geek']">{{t('review-rpggeek-candidates')}}</a>
             } @else if (volume().rpgGeekId) {
-              <span class="rpg-linked-state">{{t('rpggeek-linked', {id: volume().rpgGeekId})}}</span>
+              <a class="rpg-linked-state" [href]="'https://rpggeek.com/rpgitem/' + volume().rpgGeekId"
+                 target="_blank" rel="noopener noreferrer">
+                {{t('rpggeek-linked', {id: volume().rpgGeekId})}}
+                <i class="fa fa-external-link-alt ms-1" aria-hidden="true"></i>
+              </a>
             } @else if (isRpgPublication() && library().enableRpgGeekMetadata) {
               <span class="rpg-muted-state">{{t('rpggeek-status-' + volume().rpgGeekMatchStatus)}}</span>
             }
@@ -111,21 +115,89 @@
         @if (isRpgLibrary()) {
           <section class="rpg-bibliography" [attr.aria-label]="t('rpg-bibliography')">
             <h2>{{t('rpg-bibliography')}}</h2>
-            <dl class="rpg-bibliography-grid">
-              <div><dt>{{t('rpg-title')}}</dt><dd>{{volume().name}}</dd></div>
-              <div><dt>{{t('rpg-year')}}</dt><dd>{{volume().rpgPublicationYear || t('rpg-empty')}}</dd></div>
-              <div><dt>{{t('rpg-writers')}}</dt><dd>{{volume().rpgWriters?.join(', ') || t('rpg-empty')}}</dd></div>
-              <div><dt>{{t('rpg-publishers')}}</dt><dd>{{volume().rpgPublishers?.join(', ') || t('rpg-empty')}}</dd></div>
-              @if (isRpgPublication()) {
-                <div><dt>{{t('rpggeek-id')}}</dt><dd>{{volume().rpgGeekId || t('rpggeek-not-linked')}}</dd></div>
-                <div><dt>{{t('drivethrurpg-id')}}</dt><dd>{{volume().driveThruRpgId || t('rpggeek-not-linked')}}</dd></div>
-              }
-            </dl>
-            <h3>{{t('rpg-summary')}}</h3>
-            @if (volume().summary) {
-              <app-read-more [text]="volume().summary" [useResponsiveLength]="true" />
+            @if (accountService.hasAdminRole()) {
+              <form [formGroup]="rpgBibliographyForm" (ngSubmit)="saveRpgBibliography()">
+                <fieldset class="rpg-bibliography-fields" [disabled]="rpgBibliographySaving()">
+                  <div class="rpg-bibliography-edit-grid">
+                    <div class="rpg-bibliography-field">
+                      <label for="rpg-inline-title">{{t('rpg-title')}}</label>
+                      <div class="input-group">
+                        <input id="rpg-inline-title" class="form-control" formControlName="name" required maxlength="500">
+                        <span class="input-group-text" [ngbTooltip]="t('rpg-field-lock')">
+                          <input type="checkbox" class="form-check-input mt-0" formControlName="nameLocked"
+                                 [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-title')">
+                        </span>
+                      </div>
+                      @if (rpgBibliographyForm.controls.name.invalid && rpgBibliographyForm.controls.name.touched) {
+                        <small class="rpg-field-error" role="alert">{{t('rpg-title-required')}}</small>
+                      }
+                    </div>
+                    <div class="rpg-bibliography-field">
+                      <label for="rpg-inline-year">{{t('rpg-year')}}</label>
+                      <div class="input-group">
+                        <input id="rpg-inline-year" class="form-control" type="number" min="1000" max="9999" step="1" formControlName="rpgPublicationYear">
+                        <span class="input-group-text" [ngbTooltip]="t('rpg-field-lock')">
+                          <input type="checkbox" class="form-check-input mt-0" formControlName="rpgPublicationYearLocked"
+                                 [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-year')">
+                        </span>
+                      </div>
+                      @if (rpgBibliographyForm.controls.rpgPublicationYear.invalid && rpgBibliographyForm.controls.rpgPublicationYear.touched) {
+                        <small class="rpg-field-error" role="alert">{{t('rpg-year-invalid')}}</small>
+                      }
+                    </div>
+                    <div class="rpg-bibliography-field">
+                      <label for="rpg-inline-writers">{{t('rpg-writers')}}</label>
+                      <div class="input-group">
+                        <input id="rpg-inline-writers" class="form-control" formControlName="rpgWriters">
+                        <span class="input-group-text" [ngbTooltip]="t('rpg-field-lock')">
+                          <input type="checkbox" class="form-check-input mt-0" formControlName="rpgWritersLocked"
+                                 [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-writers')">
+                        </span>
+                      </div>
+                    </div>
+                    <div class="rpg-bibliography-field">
+                      <label for="rpg-inline-publishers">{{t('rpg-publishers')}}</label>
+                      <div class="input-group">
+                        <input id="rpg-inline-publishers" class="form-control" formControlName="rpgPublishers">
+                        <span class="input-group-text" [ngbTooltip]="t('rpg-field-lock')">
+                          <input type="checkbox" class="form-check-input mt-0" formControlName="rpgPublishersLocked"
+                                 [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-publishers')">
+                        </span>
+                      </div>
+                      <small>{{t('rpg-names-help')}}</small>
+                    </div>
+                  </div>
+                  <div class="rpg-bibliography-field rpg-bibliography-summary">
+                    <label for="rpg-inline-summary">{{t('rpg-summary')}}</label>
+                    <div class="input-group">
+                      <textarea id="rpg-inline-summary" class="form-control" rows="4" formControlName="summary" maxlength="10000"></textarea>
+                      <span class="input-group-text" [ngbTooltip]="t('rpg-field-lock')">
+                        <input type="checkbox" class="form-check-input mt-0" formControlName="summaryLocked"
+                               [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-summary')">
+                      </span>
+                    </div>
+                  </div>
+                </fieldset>
+                @if (rpgBibliographySaveError()) {
+                  <p class="rpg-inline-save-error" role="alert">{{t('rpg-bibliography-save-error')}}</p>
+                }
+                <button class="btn btn-primary mt-3" type="submit" [disabled]="rpgBibliographyForm.invalid || rpgBibliographySaving()">
+                  {{rpgBibliographySaving() ? t('rpg-saving') : t('rpg-save')}}
+                </button>
+              </form>
             } @else {
-              <p class="rpg-empty">{{t('rpg-empty')}}</p>
+              <dl class="rpg-bibliography-grid">
+                <div><dt>{{t('rpg-title')}}</dt><dd>{{volume().name}}</dd></div>
+                <div><dt>{{t('rpg-year')}}</dt><dd>{{volume().rpgPublicationYear || t('rpg-empty')}}</dd></div>
+                <div><dt>{{t('rpg-writers')}}</dt><dd>{{volume().rpgWriters?.join(', ') || t('rpg-empty')}}</dd></div>
+                <div><dt>{{t('rpg-publishers')}}</dt><dd>{{volume().rpgPublishers?.join(', ') || t('rpg-empty')}}</dd></div>
+              </dl>
+              <h3>{{t('rpg-summary')}}</h3>
+              @if (volume().summary) {
+                <app-read-more [text]="volume().summary" [useResponsiveLength]="true" />
+              } @else {
+                <p class="rpg-empty">{{t('rpg-empty')}}</p>
+              }
             }
           </section>
         } @else {

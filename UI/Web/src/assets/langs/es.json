@@ -886,6 +886,14 @@
         "rpggeek-linked": "RPGGeek #{{id}} vinculado",
         "rpg-edit-metadata": "Editar metadatos",
         "rpg-bibliography": "Metadatos del material",
+        "rpg-bibliography-saved": "Metadatos del elemento actualizados",
+        "rpg-bibliography-save-error": "No se pudieron guardar los metadatos. Revisa los campos y vuelve a intentarlo.",
+        "rpg-save": "Guardar",
+        "rpg-saving": "Guardando…",
+        "rpg-field-lock": "Proteger frente a datos externos y escaneos",
+        "rpg-names-help": "Separa varios nombres con comas.",
+        "rpg-title-required": "Introduce un título (máximo 500 caracteres).",
+        "rpg-year-invalid": "Introduce un año entre 1000 y 9999.",
         "rpg-title": "Título",
         "rpg-year": "Año de publicación",
         "rpg-writers": "Autores y diseñadores",
@@ -2140,9 +2148,6 @@
         "rpg-lock": "Proteger frente a datos externos y escaneos",
         "rpg-search-note": "El candado protege un campo de cambios automáticos; no impide editarlo. Al editar se activa la protección. Desactívala después solo si permites que RPGGeek reemplace el valor. Guardar aquí no vincula ninguna ficha.",
         "rpg-save-error": "No se pudieron guardar todos los cambios. Revisa los campos y vuelve a intentarlo.",
-        "rpggeek-id": "RPGGeek ID",
-        "rpggeek-not-linked": "Sin vincular",
-        "rpggeek-id-help": "Solo lectura. Para asociar una ficha RPGGeek, vuelve a la publicación, revisa una candidata y confírmala explícitamente.",
         "external-ids-tab": "{{tabs.external-ids-tab}}",
         "read-time-label": "{{edit-chapter-modal.read-time-label}}"
     },
@@ -4466,7 +4471,9 @@
         "metronId-label": "ID de Metron",
         "isbn-label": "{{edit-chapter-modal.isbn-label}}",
         "not-set-label": "No establecido",
-        "cbrId-label": "ID de Comic Book RoundUp"
+        "cbrId-label": "ID de Comic Book RoundUp",
+        "rpgGeekId-label": "ID de RPGGeek",
+        "driveThruRpgId-label": "ID del producto de DriveThruRPG"
     },
     "license-api-stats": {
         "title": "Uso de la API",

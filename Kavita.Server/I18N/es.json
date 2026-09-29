@@ -80,6 +80,7 @@
     "rpg-split-invalid-title": "Escribe un título de entre 1 y 200 caracteres para la nueva Publicación.",
     "rpg-split-save-failed": "No se pudo separar la versión. No se guardaron cambios.",
     "rpg-bibliography-invalid": "Revisa el título, el año y los nombres antes de guardar los metadatos de rol.",
+    "rpg-external-id-invalid": "Introduce un número entero positivo para cada ID de proveedor RPG.",
     "rpggeek-not-rpg-library": "Los candidatos de RPGGeek solo están disponibles en una biblioteca RPG.",
     "rpggeek-not-publication": "Clasifica este elemento como Publicación antes de buscar en RPGGeek.",
     "rpggeek-provider-disabled": "RPGGeek está desactivado para esta biblioteca.",

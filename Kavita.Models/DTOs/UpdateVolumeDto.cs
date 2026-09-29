@@ -7,6 +7,8 @@ public sealed record UpdateVolumeDto : IUpdateExternalMetadataIds
     public int Id { get; init; }
     /// <summary>Only used for RPG volumes; omitted by existing clients.</summary>
     public UpdateRpgBibliographyDto? RpgBibliography { get; init; }
+    /// <summary>Only used for RPG publications; omitted to leave provider links unchanged.</summary>
+    public UpdateRpgExternalMetadataIdsDto? RpgExternalMetadataIds { get; init; }
 
     public int? AniListId { get; set; }
     public long? MalId { get; set; }

@@ -1843,6 +1843,14 @@
         "rpggeek-linked": "RPGGeek #{{id}} linked",
         "rpg-edit-metadata": "Edit metadata",
         "rpg-bibliography": "Item metadata",
+        "rpg-bibliography-saved": "Item metadata updated",
+        "rpg-bibliography-save-error": "Could not save item metadata. Check the fields and try again.",
+        "rpg-save": "Save",
+        "rpg-saving": "Saving…",
+        "rpg-field-lock": "Protect from external data and scans",
+        "rpg-names-help": "Separate multiple names with commas.",
+        "rpg-title-required": "Enter a title (500 characters maximum).",
+        "rpg-year-invalid": "Enter a year from 1000 to 9999.",
         "rpg-title": "Title",
         "rpg-year": "Publication year",
         "rpg-writers": "Writers and designers",
@@ -4015,10 +4023,7 @@
         "rpg-names-help": "Separate multiple names with commas.",
         "rpg-lock": "Protect from external data and scans",
         "rpg-search-note": "The lock protects a field from automatic updates; it does not prevent you from editing it. Edits turn protection on. Turn it off after editing only if RPGGeek may replace the value. Saving here does not link a record.",
-        "rpg-save-error": "Not all changes could be saved. Check the fields and try again.",
-        "rpggeek-id": "RPGGeek ID",
-        "rpggeek-not-linked": "Not linked",
-        "rpggeek-id-help": "Read-only. To link an RPGGeek record, return to the publication, review a candidate, and confirm it explicitly."
+        "rpg-save-error": "Not all changes could be saved. Check the fields and try again."
     },
 
     "edit-person-modal": {
@@ -5105,6 +5110,8 @@
         "comicVineId-label": "Comic Vine Id",
         "metronId-label": "Metron Id",
         "cbrId-label": "Comic Book Roundup Id",
+        "rpgGeekId-label": "RPGGeek ID",
+        "driveThruRpgId-label": "DriveThruRPG product ID",
         "not-set-label": "Not set",
         "isbn-label": "{{edit-chapter-modal.isbn-label}}"
     },

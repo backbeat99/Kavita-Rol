@@ -15,6 +15,7 @@ import {
   viewChild
 } from '@angular/core';
 import {DOCUMENT, Location, NgClass, NgStyle} from "@angular/common";
+import {FormControl, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {HttpErrorResponse} from '@angular/common/http';
 import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {ImageService} from "../_services/image.service";
@@ -96,6 +97,7 @@ import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
 import {EntityTitleService} from "../_services/entity-title.service";
 import {DriveThruRpgMatchStatus, DriveThruRpgSearchResult, RpgMaterialType} from "../_models/rpg/rpg-catalog";
+import {RpgBibliographyUpdate, UpdateVolumeRequest} from "../_models/update-volume-request";
 import {ToastrService} from '@openng/ngx-toastr';
 
 interface VolumeCast extends IHasCast {
@@ -164,7 +166,8 @@ interface VolumeCast extends IHasCast {
     ReadingProgressStatusPipePipe,
     ReadingProgressIconPipePipe,
     ChapterCardComponent,
-    TabTitlePipe
+    TabTitlePipe,
+    ReactiveFormsModule
   ],
   templateUrl: './volume-detail.component.html',
   styleUrl: './volume-detail.component.scss',
@@ -212,6 +215,27 @@ export class VolumeDetailComponent implements OnInit {
   isRpgResource = computed(() => this.isRpgLibrary() && this.volume().rpgMaterialType >= RpgMaterialType.Map);
   showRpgVersionPicker = computed(() => this.isRpgPublication() && this.volume().chapters.length > 0);
   rpgSelectedChapterId = signal<number | null>(null);
+  readonly rpgBibliographyForm = new FormGroup({
+    name: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.maxLength(500)]}),
+    nameLocked: new FormControl(false, {nonNullable: true}),
+    summary: new FormControl('', {nonNullable: true, validators: [Validators.maxLength(10000)]}),
+    summaryLocked: new FormControl(false, {nonNullable: true}),
+    rpgPublicationYear: new FormControl<number | null>(null, {validators: [
+      Validators.min(1000), Validators.max(9999),
+      control => control.value === null || Number.isInteger(control.value) ? null : {integer: true}
+    ]}),
+    rpgPublicationYearLocked: new FormControl(false, {nonNullable: true}),
+    rpgWriters: new FormControl('', {nonNullable: true}),
+    rpgWritersLocked: new FormControl(false, {nonNullable: true}),
+    rpgPublishers: new FormControl('', {nonNullable: true}),
+    rpgPublishersLocked: new FormControl(false, {nonNullable: true}),
+  });
+  readonly rpgBibliographySaving = signal(false);
+  readonly rpgBibliographySaveError = signal(false);
+  private readonly syncRpgBibliographyForm = effect(() => {
+    const volume = this.volume();
+    if (!this.rpgBibliographyForm.dirty) this.resetRpgBibliographyForm(volume);
+  });
   readonly canManagePublicationVersions = computed(() => this.accountService.canCurrentUserInvokeAction(Action.Delete));
   readonly splitVersionChapterId = signal<number | null>(null);
   readonly splitVersionTitle = signal('');
@@ -411,6 +435,24 @@ export class VolumeDetailComponent implements OnInit {
   }
 
 
+  constructor() {
+    this.rpgBibliographyForm.controls.name.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+      if (value.trim() !== this.volume().name) this.rpgBibliographyForm.controls.nameLocked.setValue(true, {emitEvent: false});
+    });
+    this.rpgBibliographyForm.controls.summary.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+      if (value !== (this.volume().summary ?? '')) this.rpgBibliographyForm.controls.summaryLocked.setValue(true, {emitEvent: false});
+    });
+    this.rpgBibliographyForm.controls.rpgPublicationYear.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+      if (value !== (this.volume().rpgPublicationYear ?? null)) this.rpgBibliographyForm.controls.rpgPublicationYearLocked.setValue(true, {emitEvent: false});
+    });
+    this.rpgBibliographyForm.controls.rpgWriters.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+      if (!this.sameRpgNames(value, this.volume().rpgWriters)) this.rpgBibliographyForm.controls.rpgWritersLocked.setValue(true, {emitEvent: false});
+    });
+    this.rpgBibliographyForm.controls.rpgPublishers.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(value => {
+      if (!this.sameRpgNames(value, this.volume().rpgPublishers)) this.rpgBibliographyForm.controls.rpgPublishersLocked.setValue(true, {emitEvent: false});
+    });
+  }
+
   ngOnInit() {
     if (this.isRpgLibrary()) {
       const companionBar = this.document.querySelector<HTMLElement>('.companion-bar');
@@ -507,7 +549,88 @@ export class VolumeDetailComponent implements OnInit {
   loadVolume() {
     this.volumeService.getVolumeMetadata(this.volumeId()).subscribe(v => {
       this.volume.set({...v});
+      if (!this.rpgBibliographyForm.dirty) this.resetRpgBibliographyForm(v);
     });
+  }
+
+  private resetRpgBibliographyForm(volume: Volume): void {
+    this.rpgBibliographyForm.reset({
+      name: volume.name,
+      nameLocked: volume.nameLocked,
+      summary: volume.summary ?? '',
+      summaryLocked: volume.summaryLocked,
+      rpgPublicationYear: volume.rpgPublicationYear ?? null,
+      rpgPublicationYearLocked: volume.rpgPublicationYearLocked,
+      rpgWriters: volume.rpgWriters?.join(', ') ?? '',
+      rpgWritersLocked: volume.rpgWritersLocked,
+      rpgPublishers: volume.rpgPublishers?.join(', ') ?? '',
+      rpgPublishersLocked: volume.rpgPublishersLocked,
+    }, {emitEvent: false});
+  }
+
+  saveRpgBibliography(): void {
+    const volume = this.volume();
+    if (!this.accountService.hasAdminRole() || !this.isRpgPublication() || this.rpgBibliographySaving() || this.rpgBibliographyForm.invalid) return;
+
+    const values = this.rpgBibliographyForm.getRawValue();
+    const name = values.name.trim();
+    if (!name) {
+      this.rpgBibliographyForm.controls.name.setErrors({required: true});
+      this.rpgBibliographyForm.controls.name.markAsTouched();
+      return;
+    }
+
+    const bibliography: RpgBibliographyUpdate = {
+      name,
+      nameLocked: values.nameLocked,
+      summary: values.summary,
+      summaryLocked: values.summaryLocked,
+      rpgPublicationYear: values.rpgPublicationYear,
+      rpgPublicationYearLocked: values.rpgPublicationYearLocked,
+      rpgWriters: this.parseRpgNames(values.rpgWriters),
+      rpgWritersLocked: values.rpgWritersLocked,
+      rpgPublishers: this.parseRpgNames(values.rpgPublishers),
+      rpgPublishersLocked: values.rpgPublishersLocked,
+    };
+    const update: UpdateVolumeRequest = {
+      id: volume.id,
+      aniListId: volume.aniListId,
+      malId: volume.malId,
+      hardcoverId: volume.hardcoverId,
+      metronId: volume.metronId,
+      comicVineId: volume.comicVineId,
+      mangaBakaId: volume.mangaBakaId,
+      cbrId: volume.cbrId,
+      coverImageLocked: volume.coverImageLocked,
+      rpgBibliography: bibliography,
+    };
+
+    this.rpgBibliographySaving.set(true);
+    this.rpgBibliographySaveError.set(false);
+    this.volumeService.updateVolume(update).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.rpgBibliographySaving.set(false))
+    ).subscribe({
+      next: updatedVolume => {
+        this.volume.set({...updatedVolume});
+        this.resetRpgBibliographyForm(updatedVolume);
+        this.toastr.success(translate('series-detail.rpg-bibliography-saved'));
+      },
+      error: () => {
+        this.rpgBibliographySaveError.set(true);
+        this.toastr.error(translate('series-detail.rpg-bibliography-save-error'));
+      }
+    });
+  }
+
+  private parseRpgNames(value: string): string[] {
+    return value.split(',').map(name => name.trim()).filter(Boolean);
+  }
+
+  private sameRpgNames(value: string, existing: readonly string[] | null | undefined): boolean {
+    const parsed = this.parseRpgNames(value);
+    const saved = existing ?? [];
+    return parsed.length === saved.length && parsed.every((name, index) => name === saved[index]);
   }
 
   readVolume(incognitoMode: boolean = false) {

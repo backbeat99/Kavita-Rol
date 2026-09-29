@@ -1,4 +1,6 @@
 import {IHasMetadataIds} from "./common/i-has-metadata-ids";
+import {RpgExternalMetadataIds} from "./rpg/rpg-catalog";
+
 
 export interface RpgBibliographyUpdate {
   name: string;
@@ -17,4 +19,5 @@ export interface UpdateVolumeRequest extends IHasMetadataIds {
   id: number;
   coverImageLocked?: boolean;
   rpgBibliography?: RpgBibliographyUpdate;
+  rpgExternalMetadataIds?: RpgExternalMetadataIds;
 }

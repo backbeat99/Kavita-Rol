@@ -71,6 +71,7 @@
     "rpg-split-invalid-title": "Enter a title of 1 to 200 characters for the new publication.",
     "rpg-split-save-failed": "This version could not be separated. No changes were saved.",
     "rpg-bibliography-invalid": "Check the title, year, and names before saving RPG metadata.",
+    "rpg-external-id-invalid": "Enter a positive whole number for each RPG provider ID.",
     "rpggeek-not-rpg-library": "RPGGeek candidates are only available in an RPG library.",
     "rpggeek-not-publication": "Classify this item as a publication before searching RPGGeek.",
     "rpggeek-provider-disabled": "RPGGeek is disabled for this library.",

@@ -20,6 +20,12 @@ your reading collection with your friends and family!
 <img src="https://img.shields.io/endpoint?url=https://stats.kavitareader.com/api/ui/shield-badge"/>
 </div>
 
+## Kavita-Rol
+Kavita-Rol is an independent fork of [Kavita](https://github.com/Kareadita/Kavita) that adds first-class support for tabletop RPG collections while retaining Kavita's reading server and readers.
+
+- Organizes RPG libraries into games, publications, and resources, with tools to classify and group publication versions.
+- Adds editable local publication metadata, with field locks to protect values from automatic updates.
+- Adds optional RPGGeek candidate review and DriveThruRPG search/linking; administrators can also edit provider IDs under External IDs.
 
 ## What Kavita Provides
 - Serve up Manga/Webtoons/Comics (cbr, cbz, zip/rar/rar5, 7zip, raw images) and Books (epub, pdf)
