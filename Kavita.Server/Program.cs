@@ -12,6 +12,7 @@ using Kavita.Common.EnvironmentInfo;
 using Kavita.Database;
 using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.User;
+using Kavita.Server.Helpers;
 using Kavita.Server.Logging;
 using Kavita.Server.ManualMigrations.v0._7._14;
 using Kavita.Server.ManualMigrations.v0._8._2;
@@ -132,6 +133,12 @@ public class Program
 
                 try
                 {
+                    if (isDbCreated)
+                    {
+                        await RpgMigrationCompatibility.MarkConsolidatedMigrationAppliedForLegacyDatabaseAsync(
+                            context.Database, logger, linkedCts.Token);
+                    }
+
                     await context.Database.MigrateAsync(linkedCts.Token);
                 }
                 catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
