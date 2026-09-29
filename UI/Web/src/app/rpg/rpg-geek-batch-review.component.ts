@@ -36,8 +36,8 @@ interface CandidateReviewItem {
   replacements: ReplacementFlags;
 }
 
-const emptyReplacements = (): ReplacementFlags => ({
-  replaceTitle: false,
+const emptyReplacements = (volume: Volume): ReplacementFlags => ({
+  replaceTitle: !volume.nameLocked,
   replaceSummary: false,
   replaceYear: false,
   replaceWriters: false,
@@ -103,7 +103,7 @@ export class RpgGeekBatchReviewComponent implements OnInit {
       selectedProductId: null,
       preview: null,
       selectedForBatch: false,
-      replacements: emptyReplacements()
+      replacements: emptyReplacements(item.volume)
     });
     this.volumeService.searchRpgGeekCandidates(volumeId, item.volume.name, forceRefresh).subscribe({
       next: result => {
@@ -134,7 +134,7 @@ export class RpgGeekBatchReviewComponent implements OnInit {
       preview: null,
       isPreviewing: true,
       selectedForBatch: false,
-      replacements: emptyReplacements(),
+      replacements: emptyReplacements(item.volume),
       searchError: null
     });
     this.loadPreview(volumeId, id, false);
@@ -236,7 +236,7 @@ export class RpgGeekBatchReviewComponent implements OnInit {
           preview: null,
           isPreviewing: false,
           selectedForBatch: false,
-          replacements: emptyReplacements()
+          replacements: emptyReplacements(volume)
         })));
         this.isLoading.set(false);
       },

@@ -40,7 +40,7 @@ export class RpgGeekReviewComponent implements OnInit {
   readonly selectedCandidate = signal<RpgGeekSearchResult | null>(null);
   readonly preview = signal<RpgGeekCandidatePreview | null>(null);
   readonly replacements = signal<Record<ReplaceField, boolean>>({
-    replaceTitle: false,
+    replaceTitle: !this.volume().nameLocked,
     replaceSummary: false,
     replaceYear: false,
     replaceWriters: false,
@@ -176,7 +176,7 @@ export class RpgGeekReviewComponent implements OnInit {
         this.preview.set(result);
         if (!result?.product) this.operationError.set(translate('rpg-geek-review.errors.7'));
         this.replacements.set({
-          replaceTitle: false,
+          replaceTitle: !this.volume().nameLocked,
           replaceSummary: false,
           replaceYear: false,
           replaceWriters: false,

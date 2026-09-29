@@ -187,6 +187,29 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Confirmation_replaces_an_existing_unlocked_publication_title_when_selected()
+    {
+        var volume = await CreatePublication();
+        volume.Name = "Local filename";
+        await _context.SaveChangesAsync();
+
+        var product = new RpgGeekProduct(370894, "Frontier Scum", 2022, null, [], [], null);
+        _client.GetProductAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+        var preview = Assert.IsType<RpgGeekCandidatePreview>(
+            (await _service.PreviewCandidateAsync(volume.Id, product.Id)).Preview);
+
+        var result = await _service.ApplyCandidateAsync(new RpgGeekCandidateApplyRequest(
+            volume.Id, product.Id, preview.Fingerprint,
+            ReplaceTitle: true, ReplaceSummary: false, ReplaceYear: false,
+            ReplaceWriters: false, ReplacePublishers: false, ReplaceCover: false));
+
+        Assert.True(result.Succeeded);
+        var saved = await Reload(volume.Id);
+        Assert.Equal("Frontier Scum", saved.Name);
+        Assert.Equal(product.Id, saved.RpgGeekId);
+    }
+
+    [Fact]
     public async Task Stale_preview_requires_confirmation_again_and_does_not_link()
     {
         var volume = await CreatePublication();
@@ -238,6 +261,32 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
         Assert.Equal(secondProduct.Id, savedSecond.RpgGeekId);
         Assert.Equal(secondProduct.Description, savedSecond.Summary);
         Assert.Equal(new[] { "Luca Rejec" }, savedSecond.RpgWriters);
+    }
+
+    [Fact]
+    public async Task Batch_confirmation_replaces_an_existing_unlocked_publication_title_when_selected()
+    {
+        var volume = await CreatePublication();
+        volume.Name = "Local filename";
+        volume.RpgGeekMatchStatus = RpgGeekMatchStatus.Candidate;
+        await _context.SaveChangesAsync();
+
+        var product = new RpgGeekProduct(370894, "Frontier Scum", 2022, null, [], [], null);
+        _client.GetProductAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+        var preview = Assert.IsType<RpgGeekCandidatePreview>(
+            (await _service.PreviewCandidateAsync(volume.Id, product.Id)).Preview);
+
+        var result = await _service.ApplyCandidatesBatchAsync(volume.SeriesId,
+        [
+            new RpgGeekCandidateApplyRequest(volume.Id, product.Id, preview.Fingerprint,
+                ReplaceTitle: true, ReplaceSummary: false, ReplaceYear: false,
+                ReplaceWriters: false, ReplacePublishers: false, ReplaceCover: false)
+        ]);
+
+        Assert.True(result.Succeeded);
+        var saved = await Reload(volume.Id);
+        Assert.Equal("Frontier Scum", saved.Name);
+        Assert.Equal(product.Id, saved.RpgGeekId);
     }
 
     [Fact]
