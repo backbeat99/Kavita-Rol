@@ -65,18 +65,12 @@
 }
 
 .game-heading h1 {
-  margin: 0 0 0.45rem;
+  margin: 0;
   font-size: 2.125rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.18;
   overflow-wrap: anywhere;
-}
-
-.game-heading p {
-  margin: 0;
-  color: var(--rpg-muted);
-  font-size: 1rem;
 }
 
 .game-actions {
@@ -107,7 +101,6 @@
 }
 
 .review-copy strong { font-weight: 650; }
-.review-copy > span { flex-basis: 100%; color: var(--rpg-muted); font-size: 0.875rem; }
 .review-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .review-actions .btn { flex: 0 0 auto; }
 
@@ -342,10 +335,6 @@
 
   .game-heading h1 {
     font-size: 1.625rem;
-  }
-
-  .game-heading p {
-    font-size: 0.8125rem;
   }
 
   .game-actions {

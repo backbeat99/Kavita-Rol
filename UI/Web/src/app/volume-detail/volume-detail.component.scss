@@ -41,7 +41,6 @@
 .rpg-bibliography-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem 1.5rem; }
 .rpg-bibliography-field { min-width: 0; }
 .rpg-bibliography-field > label { display: block; margin-bottom: .3rem; color: var(--body-text-color, #bdc9c1); font-size: .8rem; }
-.rpg-bibliography-field > small { display: block; margin-top: .3rem; color: var(--body-text-color, #bdc9c1); font-size: .75rem; }
 .rpg-bibliography-summary { margin-top: .9rem; }
 .rpg-bibliography-ids { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--border-color, #414a44); }
 .rpg-inline-save-error { margin: .75rem 0 0; color: var(--bs-danger, #ff8c8c); }
@@ -66,7 +65,6 @@
 }
 .rpg-provider-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .rpg-provider-header h2 { margin: 0; font-size: 1.05rem; }
-.rpg-provider-header p, .rpg-drivethru-search > p { max-width: 68ch; margin: .35rem 0 0; color: var(--body-text-color, #c5d0c9); font-size: .85rem; }
 .rpg-provider-status { flex: 0 0 auto; color: #b8e9ca; font-size: .8rem; text-align: right; }
 .rpg-provider-linked, .rpg-provider-notice { margin: .75rem 0; color: #b8e9ca; }
 .rpg-drivethru-external { color: var(--primary-color, #75d6a3); text-decoration-thickness: .08em; text-underline-offset: .15em; }
@@ -96,9 +94,7 @@
   background: var(--card-bg-color, #202422);
 }
 .rpg-version-picker h2, .rpg-resource-files h2 { margin: 0; font-size: 1.05rem; font-weight: 650; }
-.rpg-version-picker > p { margin: .3rem 0 .85rem; color: var(--body-text-color, #c5d0c9); font-size: .85rem; }
 .rpg-version-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: .55rem; margin-top: .55rem; }
-.rpg-version-picker > p + .rpg-version-row { margin-top: 0; }
 .rpg-version-option {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) auto;
@@ -116,7 +112,6 @@
 .rpg-version-actions .btn { min-height: 44px; }
 .rpg-version-split { white-space: nowrap; }
 .rpg-split-panel { margin-top: .45rem; padding: .8rem; border: 1px solid var(--border-color, #414a44); border-radius: .35rem; background: #1a211d; }
-.rpg-split-panel > p:first-child { margin: 0 0 .6rem; color: #c5d0c9; font-size: .82rem; line-height: 1.45; }
 .rpg-split-panel label { display: block; margin-bottom: .3rem; font-size: .83rem; font-weight: 600; }
 .rpg-split-panel input { width: 100%; min-height: 44px; padding: .55rem .7rem; border: 1px solid #536058; border-radius: .35rem; background: #121714; color: var(--body-text-color, #e4eae6); }
 .rpg-split-panel input:focus-visible { outline: 2px solid var(--primary-color, #55c991); outline-offset: 2px; }

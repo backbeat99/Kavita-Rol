@@ -9,7 +9,6 @@
   <header class="page-head">
     <div>
       <h1>{{t('title')}}</h1>
-      <p>{{t('intro')}}</p>
     </div>
     <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', volume().id]">{{t('back-to-publication')}}</a>
   </header>
@@ -31,11 +30,8 @@
   @if (!isAdmin()) {
     <div class="notice warning" role="status">{{t('admin-only')}}</div>
   } @else {
-    <div class="policy-note"><span class="notice-mark" aria-hidden="true">i</span><span>{{t('manual-confirmation-note')}}</span></div>
-
     <section class="search-panel" aria-labelledby="search-heading">
       <h2 id="search-heading">{{t('search-heading')}}</h2>
-      <p>{{t('search-help')}}</p>
       <form class="search-line" (submit)="$event.preventDefault(); search()">
         <label class="visually-hidden" for="rpggeek-query">{{t('search-label')}}</label>
         <input id="rpggeek-query" type="search" [value]="query()" (input)="setQuery($any($event.target).value)" [placeholder]="t('search-placeholder')">
@@ -48,7 +44,6 @@
       @if (hasSearched()) {
         <button class="text-button requery-button" type="button" (click)="search(true)" [disabled]="isSearching()">{{t('requery-search')}}</button>
       }
-      <p class="search-footnote">{{t('direct-id-note')}}</p>
     </section>
 
     @if (operationError() !== null) {
@@ -61,13 +56,13 @@
     <div class="results-layout">
       <section class="candidate-panel" aria-labelledby="results-heading">
         <header class="section-heading">
-          <div><h2 id="results-heading">{{t('results-heading')}}</h2><p>{{t('results-count', {count: candidates().length})}}</p></div>
+          <h2 id="results-heading">{{t('results-heading')}}</h2>
           @if (searchStatus() !== null) { <span class="status-tag">{{t('statuses.' + searchStatus())}}</span> }
         </header>
         @if (isSearching()) {
           <div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>{{t('searching')}}</div>
         } @else if (!hasSearched() && candidates().length === 0) {
-          <div class="empty-results"><strong>{{t('results-empty-title')}}</strong><span>{{t('results-empty-body')}}</span></div>
+          <div class="empty-results"><strong>{{t('results-empty-title')}}</strong></div>
         } @else if (candidates().length === 0) {
           <div class="empty-results"><strong>{{t('no-results-title')}}</strong><span>{{t('no-results-body')}}</span></div>
         } @else {
@@ -89,7 +84,7 @@
         @if (isPreviewing()) {
           <div class="loading large" role="status"><span class="spinner" aria-hidden="true"></span>{{t('loading-preview')}}</div>
         } @else if (!preview()) {
-          <div class="preview-empty"><span class="empty-mark" aria-hidden="true">?</span><h2>{{t('preview-empty-title')}}</h2><p>{{t('preview-empty-body')}}</p></div>
+          <div class="preview-empty"><span class="empty-mark" aria-hidden="true">?</span><h2>{{t('preview-empty-title')}}</h2></div>
         } @else {
           <header class="preview-head">
             @if (preview()?.product.imageUrl) {
@@ -100,10 +95,9 @@
             <div class="preview-title">
               <span class="provider-tag">{{t('candidate-record', {id: preview()!.product.id})}}</span>
               <h2 id="preview-heading">{{preview()!.product.title}}</h2>
-              <p>{{preview()!.product.yearPublished || t('year-unknown')}} · {{t('external-record')}}</p>
+              <p>{{preview()!.product.yearPublished || t('year-unknown')}}</p>
               <button class="text-button refresh-preview" type="button" (click)="refreshPreview()" [disabled]="isPreviewing()">{{t('refresh-preview')}}</button>
             </div>
-            <span class="candidate-pill">{{t('candidate-only')}}</span>
           </header>
 
           <div class="compare-table">
@@ -158,12 +152,7 @@
             </div>
           </div>
 
-          <div class="preview-notes">
-            <p><strong>{{t('version-language-title')}}</strong> {{t('version-language-note')}}</p>
-            <p>{{t('confirmation-note')}}</p>
-          </div>
           <footer class="preview-footer">
-            <p>{{t('apply-empty-defaults')}}</p>
             <button class="button primary" type="button" [disabled]="isApplying() || !preview()" (click)="applyCandidate()">
               @if (isApplying()) { <span class="spinner dark" aria-hidden="true"></span> }
               {{isApplying() ? t('applying') : t('confirm-link')}}

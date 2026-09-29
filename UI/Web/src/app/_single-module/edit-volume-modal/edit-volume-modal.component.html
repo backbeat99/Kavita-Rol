@@ -80,7 +80,6 @@
     @if (libraryType() === LibraryType.Rpg && accountService.hasAdminRole()) {
       <ng-template [appEditTab]="Tabs.Metadata">
         <div class="rpg-bibliography">
-          <p class="rpg-form-help">{{t('rpg-metadata-help')}}</p>
           <div class="rpg-field">
             <label for="rpg-name">{{t('rpg-title')}}</label>
             <app-lockable-field [(locked)]="locks.name">
@@ -106,16 +105,13 @@
             <app-lockable-field [(locked)]="locks.rpgWriters">
               <input id="rpg-writers" class="form-control" [formField]="formGroup.rpgWriters" [appFormField]="formGroup.rpgWriters">
             </app-lockable-field>
-            <small>{{t('rpg-names-help')}}</small>
           </div>
           <div class="rpg-field">
             <label for="rpg-publishers">{{t('rpg-publishers')}}</label>
             <app-lockable-field [(locked)]="locks.rpgPublishers">
               <input id="rpg-publishers" class="form-control" [formField]="formGroup.rpgPublishers" [appFormField]="formGroup.rpgPublishers">
             </app-lockable-field>
-            <small>{{t('rpg-names-help')}}</small>
           </div>
-          <p class="rpg-form-help">{{t('rpg-search-note')}}</p>
           @if (saveError()) { <p class="alert alert-danger" role="alert">{{t('rpg-save-error')}}</p> }
         </div>
       </ng-template>

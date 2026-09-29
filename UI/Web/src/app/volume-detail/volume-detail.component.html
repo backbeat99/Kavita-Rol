@@ -164,7 +164,6 @@
                                  [attr.aria-label]="t('rpg-field-lock') + ': ' + t('rpg-publishers')">
                         </span>
                       </div>
-                      <small>{{t('rpg-names-help')}}</small>
                     </div>
                   </div>
                   <div class="rpg-bibliography-field rpg-bibliography-summary">
@@ -207,13 +206,12 @@
         @if (isRpgPublication() && (library().enableDriveThruRpgMetadata || volume().driveThruRpgId)) {
           <section class="rpg-drivethru-panel" aria-labelledby="drivethrurpg-heading">
             <header class="rpg-provider-header">
-              <div>
-                <h2 id="drivethrurpg-heading">{{t('drivethrurpg-heading')}}</h2>
-                <p>{{t('drivethrurpg-help')}}</p>
-              </div>
-              <span class="rpg-provider-status" [attr.data-status]="volume().driveThruRpgMatchStatus">
-                {{t('drivethrurpg-status-' + volume().driveThruRpgMatchStatus)}}
-              </span>
+              <h2 id="drivethrurpg-heading">{{t('drivethrurpg-heading')}}</h2>
+              @if ([1, 2, 4, 5].includes(volume().driveThruRpgMatchStatus)) {
+                <span class="rpg-provider-status" [attr.data-status]="volume().driveThruRpgMatchStatus">
+                  {{t('drivethrurpg-status-' + volume().driveThruRpgMatchStatus)}}
+                </span>
+              }
             </header>
 
             @if (volume().driveThruRpgId) {
@@ -231,8 +229,7 @@
                   <div class="rpg-drivethru-search-controls">
                     <input id="drivethrurpg-query" type="search" autocomplete="off" [attr.placeholder]="volume().name"
                            [value]="driveThruSearchQuery()" (input)="setDriveThruSearchQuery($event)"
-                           (keyup.enter)="searchDriveThruRpg()" [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null"
-                           [attr.aria-describedby]="'drivethrurpg-search-help'">
+                           (keyup.enter)="searchDriveThruRpg()" [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
                     <button class="btn btn-outline-primary" type="button" (click)="searchDriveThruRpg()"
                             [disabled]="driveThruSearching() || driveThruLinkingProductId() !== null">
                       @if (driveThruSearching()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
@@ -245,7 +242,6 @@
                       {{t('drivethrurpg-search-game-title')}}
                     </button>
                   }
-                  <p id="drivethrurpg-search-help">{{t('drivethrurpg-confirmation-note')}}</p>
                   <div class="rpg-drivethru-manual">
                     <label for="drivethrurpg-manual-id">{{t('drivethrurpg-manual-id-label')}}</label>
                     <div class="rpg-drivethru-search-controls">
@@ -302,7 +298,6 @@
         @if (showRpgVersionPicker()) {
           <section class="rpg-version-picker" [attr.aria-label]="t('rpg-version-heading')">
             <h2>{{t('rpg-version-heading')}}</h2>
-            <p>{{t('rpg-version-help')}}</p>
             @for (chapter of volume().chapters; track chapter.id) {
               <div class="rpg-version-row">
                 <label class="rpg-version-option" [class.selected]="rpgSelectedChapter()?.id === chapter.id">
@@ -327,7 +322,6 @@
               </div>
               @if (splitVersionChapterId() === chapter.id) {
                 <section class="rpg-split-panel" [attr.aria-label]="t('split-version-title')">
-                  <p>{{t('split-version-help')}}</p>
                   <label [for]="'split-version-title-' + chapter.id">{{t('split-version-title')}}</label>
                   <input [id]="'split-version-title-' + chapter.id" type="text" maxlength="200" [value]="splitVersionTitle()" (input)="splitVersionTitle.set($any($event.target).value)">
                   @if (splitVersionError()) { <p class="rpg-split-error" role="alert">{{splitVersionError()}}</p> }

@@ -8,7 +8,6 @@
   <header class="page-head">
     <div>
       <h1>{{t('title')}}</h1>
-      <p>{{t('intro')}}</p>
     </div>
     <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'rpg-review']">{{t('back-to-materials')}}</a>
   </header>
@@ -29,7 +28,6 @@
       <div>
         <strong>{{t('publication-count', {count: items().length})}}</strong>
         <span>{{t('linked-count', {count: linkedCount()})}}</span>
-        <p>{{t('confirmation-note')}}</p>
       </div>
       @if (searchingCount() > 0) { <span class="visually-hidden" role="status">{{t('searching-count', {count: searchingCount()})}}</span> }
       @if (previewingCount() > 0) { <span class="visually-hidden" role="status">{{t('previewing-count', {count: previewingCount()})}}</span> }
@@ -74,14 +72,12 @@
               <div class="loading inline" aria-hidden="true"><span class="spinner"></span>{{t('searching')}}</div>
             } @else if (!item.hasSearched) {
               <div class="no-candidate">
-                <p>{{t('search-first')}}</p>
                 <button class="button secondary" type="button" (click)="searchItem(item.volume.id)">{{t('search-item')}}</button>
               </div>
             } @else if (item.searchError) {
               <div class="row-error"><span>{{item.searchError}}</span><button class="text-button" type="button" (click)="searchItem(item.volume.id, true)">{{t('retry-search')}}</button></div>
             } @else if (item.status === RpgGeekMatchStatus.Ambiguous) {
               <div class="ambiguous-note">
-                <p>{{t('ambiguous-individual')}}</p>
                 <a class="button secondary" [routerLink]="['/library', library().id, 'series', series().id, 'volume', item.volume.id, 'rpg-geek']">{{t('review-individually')}}</a>
               </div>
             } @else if (item.status === RpgGeekMatchStatus.Candidate) {
@@ -182,7 +178,7 @@
       </section>
 
       <footer class="batch-footer">
-        <div><strong>{{t('selection-summary', {selected: selectedCount(), ready: readyCount()})}}</strong><p>{{t('reading-available')}} {{t('batch-limit-note', {count: batchLimit})}}</p></div>
+        <strong>{{t('selection-summary', {selected: selectedCount(), ready: readyCount()})}}</strong>
         <button class="button primary" type="button" [disabled]="isApplying() || readyCount() === 0 || searchingCount() > 0 || previewingCount() > 0" (click)="confirmBatch()">
           @if (isApplying()) { <span class="spinner dark" aria-hidden="true"></span> }
           {{isApplying() ? t('confirming') : t('confirm-batch', {count: readyCount()})}}

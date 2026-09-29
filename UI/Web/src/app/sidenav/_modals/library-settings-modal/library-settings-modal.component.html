@@ -165,7 +165,7 @@
 
           @if (selectedLibraryType() === LibraryType.Rpg) {
             <div class="row g-0 mt-4 mb-4">
-              <app-setting-switch [title]="t('enable-rpggeek-label')" [subtitle]="t('enable-rpggeek-tooltip')">
+              <app-setting-switch [title]="t('enable-rpggeek-label')">
                 <ng-template>
                   <div class="form-check form-switch float-end">
                     <input type="checkbox" role="switch" [formField]="formGroup.enableRpgGeekMetadata" class="form-check-input">
@@ -174,7 +174,7 @@
               </app-setting-switch>
             </div>
             <div class="row g-0 mt-4 mb-4">
-              <app-setting-switch [title]="t('enable-drivethrurpg-label')" [subtitle]="t('enable-drivethrurpg-tooltip')">
+              <app-setting-switch [title]="t('enable-drivethrurpg-label')">
                 <ng-template>
                   <div class="form-check form-switch float-end">
                     <input type="checkbox" role="switch" [formField]="formGroup.enableDriveThruRpgMetadata" class="form-check-input">

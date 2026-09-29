@@ -13,7 +13,6 @@
     }
     <div class="game-heading">
       <h1>{{series().name}}</h1>
-      <p>{{t('subtitle')}}</p>
     </div>
     @if (isAdmin()) {
       <div class="game-actions">
@@ -41,7 +40,6 @@
         @if (driveThruRpgToReview().length > 0) {
           <strong>{{driveThruRpgToReview().length === 1 ? t('review-drivethrurpg-one') : t('review-drivethrurpg-count', {count: driveThruRpgToReview().length})}}</strong>
         }
-        <span>{{t('review-description')}}</span>
       </div>
       <div class="review-actions">
         @if (unclassified().length > 0) {
