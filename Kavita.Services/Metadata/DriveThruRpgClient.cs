@@ -74,7 +74,7 @@ public sealed class DriveThruRpgClient(HttpClient httpClient) : IDriveThruRpgCli
             ? DateTime.SpecifyKind(parsedDate.Date, DateTimeKind.Utc)
             : null;
 
-        return new DriveThruRpgProduct(
+        return ExternalMetadataText.Sanitize(new DriveThruRpgProduct(
             productId,
             title.Trim(),
             ReadAuthors(attributes),
@@ -82,7 +82,7 @@ public sealed class DriveThruRpgClient(HttpClient httpClient) : IDriveThruRpgCli
             ReadPublisher(root),
             releaseDate,
             BuildCoverUrl(GetString(attributes, "image")),
-            ReadLanguageCode(root, attributes));
+            ReadLanguageCode(root, attributes)));
     }
 
     private static void AddSearchResult(JsonElement item, string? fallbackId, ICollection<DriveThruRpgSearchResult> results)
@@ -97,7 +97,7 @@ public sealed class DriveThruRpgClient(HttpClient httpClient) : IDriveThruRpgCli
         if (!id.HasValue && int.TryParse(fallbackId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId)) id = parsedId;
 
         var title = GetString(attributes, "name") ?? GetString(attributes, "title");
-        if (id.HasValue && !string.IsNullOrWhiteSpace(title)) results.Add(new DriveThruRpgSearchResult(id.Value, title.Trim()));
+        if (id.HasValue && !string.IsNullOrWhiteSpace(title)) results.Add(ExternalMetadataText.Sanitize(new DriveThruRpgSearchResult(id.Value, title.Trim())));
     }
 
     private static IReadOnlyList<string> ReadAuthors(JsonElement attributes)

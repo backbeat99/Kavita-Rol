@@ -214,6 +214,35 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Confirmation_stores_provider_text_without_entities_or_markup()
+    {
+        var volume = await CreatePublication();
+        var product = new RpgGeekProduct(370894, "Frontier Scum &amp; Friends", 2022,
+            "<p>You&rsquo;re after the good stuff.</p>", ["Ren&eacute; Designer"],
+            ["Games &amp; Omnivorous"], null);
+        _client.GetProductAsync(product.Id, Arg.Any<CancellationToken>()).Returns(product);
+
+        var preview = Assert.IsType<RpgGeekCandidatePreview>(
+            (await _service.PreviewCandidateAsync(volume.Id, product.Id)).Preview);
+        Assert.Equal("Frontier Scum & Friends", preview.Product.Title);
+        Assert.Equal("You’re after the good stuff.", preview.Product.Description);
+
+        var result = await _service.ApplyCandidateAsync(new RpgGeekCandidateApplyRequest(
+            volume.Id, product.Id, preview.Fingerprint,
+            ReplaceTitle: true, ReplaceSummary: true, ReplaceYear: true,
+            ReplaceWriters: true, ReplacePublishers: true, ReplaceCover: false));
+
+        Assert.True(result.Succeeded);
+        var saved = await Reload(volume.Id);
+        Assert.Equal("Frontier Scum & Friends", saved.Name);
+        Assert.Equal("You’re after the good stuff.", saved.Summary);
+        Assert.Equal(new[] {"René Designer"}, saved.RpgWriters);
+        Assert.Equal(new[] {"Games & Omnivorous"}, saved.RpgPublishers);
+        Assert.Equal("René Designer", await _context.VolumePeople.Where(link => link.VolumeId == volume.Id)
+            .Select(link => link.Person.Name).SingleAsync());
+    }
+
+    [Fact]
     public async Task Stale_preview_requires_confirmation_again_and_does_not_link()
     {
         var volume = await CreatePublication();

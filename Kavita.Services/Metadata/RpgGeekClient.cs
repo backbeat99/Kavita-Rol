@@ -29,7 +29,7 @@ public sealed class RpgGeekClient(
 {
     private const string ApiRoot = "https://api.geekdo.com/xmlapi2";
     private const string UserAgent = "Kavita RPG catalog metadata client";
-    private const string CachePrefix = "rpggeek:v1:";
+    private const string CachePrefix = "rpggeek:v2:";
     private static readonly SemaphoreSlim RateGate = new(1, 1);
     private static readonly SemaphoreSlim[] ResponseCacheGates = Enumerable.Range(0, 128)
         .Select(_ => new SemaphoreSlim(1, 1)).ToArray();
@@ -254,6 +254,7 @@ public sealed class RpgGeekClient(
                 PrimaryName(item) ?? string.Empty,
                 ParseYear(item.Element("yearpublished"))))
             .Where(result => result.Id > 0 && !string.IsNullOrWhiteSpace(result.Name))
+            .Select(ExternalMetadataText.Sanitize)
             .ToArray();
     }
 
@@ -266,14 +267,14 @@ public sealed class RpgGeekClient(
         var title = PrimaryName(item);
         if (string.IsNullOrWhiteSpace(title)) return null;
 
-        return new RpgGeekProduct(
+        return ExternalMetadataText.Sanitize(new RpgGeekProduct(
             id,
             title.Trim(),
             ParseYear(item.Element("yearpublished")),
             ((string?)item.Element("description"))?.Trim(),
             ReadLinkValues(item, "rpgdesigner"),
             ReadLinkValues(item, "rpgpublisher"),
-            (string?)item.Element("image"));
+            (string?)item.Element("image")));
     }
 
     private static string? PrimaryName(XElement item) =>

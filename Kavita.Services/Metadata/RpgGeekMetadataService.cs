@@ -99,10 +99,12 @@ public sealed class RpgGeekMetadataService(
         try
         {
             var product = await client.GetProductAsync(productId, cancellationToken, forceRefresh);
-            return product is null
-                ? PreviewFailure(RpgGeekMetadataOperationError.ProductNotFound)
-                : new RpgGeekCandidatePreviewResult(true, RpgGeekMetadataOperationError.None,
-                    new RpgGeekCandidatePreview(product, Fingerprint(product)));
+            if (product is null) return PreviewFailure(RpgGeekMetadataOperationError.ProductNotFound);
+
+            // Cached responses from older versions can still carry raw HTML entities.
+            product = ExternalMetadataText.Sanitize(product);
+            return new RpgGeekCandidatePreviewResult(true, RpgGeekMetadataOperationError.None,
+                new RpgGeekCandidatePreview(product, Fingerprint(product)));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -144,6 +146,7 @@ public sealed class RpgGeekMetadataService(
         }
 
         if (product is null) return ApplyFailure(RpgGeekMetadataOperationError.ProductNotFound);
+        product = ExternalMetadataText.Sanitize(product);
         var currentPreview = new RpgGeekCandidatePreview(product, Fingerprint(product));
         if (!string.Equals(request.PreviewFingerprint, currentPreview.Fingerprint, StringComparison.Ordinal))
         {
@@ -257,6 +260,7 @@ public sealed class RpgGeekMetadataService(
             }
 
             if (product is null) return BatchApplyFailure(RpgGeekMetadataOperationError.ProductNotFound);
+            product = ExternalMetadataText.Sanitize(product);
             products[request.VolumeId] = product;
             var currentPreview = new RpgGeekCandidatePreview(product, Fingerprint(product));
             if (!string.Equals(request.PreviewFingerprint, currentPreview.Fingerprint, StringComparison.Ordinal))

@@ -102,6 +102,31 @@ public class RpgGeekClientTests
     }
 
     [Fact]
+    public async Task Product_decodes_entities_and_removes_markup_from_provider_text()
+    {
+        var (client, handler) = CreateClient(Token);
+        handler.Enqueue("""
+            <items>
+              <item type="rpgitem" id="370894">
+                <name type="primary" value="Frontier Scum &amp;amp; Friends"/>
+                <yearpublished value="2022"/>
+                <description>You&amp;rsquo;re after the good stuff.&lt;br /&gt;&lt;br /&gt;Faberg&amp;eacute; eggs.</description>
+                <link type="rpgdesigner" id="11" value="Ren&amp;eacute; Designer"/>
+                <link type="rpgpublisher" id="21" value="Games &amp;amp; Omnivorous"/>
+              </item>
+            </items>
+            """);
+
+        var product = await client.GetProductAsync(370894);
+
+        Assert.NotNull(product);
+        Assert.Equal("Frontier Scum & Friends", product.Title);
+        Assert.Equal("You’re after the good stuff.\n\nFabergé eggs.", product.Description);
+        Assert.Equal(new[] {"René Designer"}, product.Designers);
+        Assert.Equal(new[] {"Games & Omnivorous"}, product.Publishers);
+    }
+
+    [Fact]
     public async Task Successful_search_is_persisted_across_client_instances_and_normalized_queries_reuse_it()
     {
         var cache = new SharedDistributedCache();

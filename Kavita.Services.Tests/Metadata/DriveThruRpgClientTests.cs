@@ -46,7 +46,7 @@ public class DriveThruRpgClientTests
               "data": {
                 "id": 2468,
                 "attributes": {
-                  "description": {"name": "Dragonbane Core Rulebook", "description": "<p>Core rules</p>"},
+                  "description": {"name": "Dragonbane Core Rulebook", "description": "<p>Core rules for &eacute;lite play.</p>"},
                   "authors": ["Author One", {"name":"Author Two"}],
                   "dateAvailable": "2024-01-02T23:15:00-05:00",
                   "image": "8957/240640.jpg",
@@ -64,7 +64,7 @@ public class DriveThruRpgClientTests
         Assert.Equal(2468, product.ProductId);
         Assert.Equal("Dragonbane Core Rulebook", product.Title);
         Assert.Equal(new[] { "Author One", "Author Two" }, product.Authors);
-        Assert.Equal("<p>Core rules</p>", product.Description);
+        Assert.Equal("Core rules for élite play.", product.Description);
         Assert.Equal("Publisher One", product.Publisher);
         Assert.Equal(new DateTime(2024, 1, 2, 0, 0, 0, DateTimeKind.Utc), product.ReleaseDate);
         Assert.Equal("https://www.drivethrurpg.com/images/8957/240640.jpg", product.CoverUrl);
