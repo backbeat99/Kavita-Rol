@@ -92,8 +92,9 @@ public class Program
                     }
                 }
 
-                // Apply Before manual migrations that need to run before actual migrations
-                if (isDbCreated)
+                // Fresh SQLite files can connect before EF has created ManualMigrationHistory.
+                // Pre-EF manual migrations are only meaningful when that table already exists.
+                if (isDbCreated && await SqliteMigrationRecovery.HasManualMigrationHistoryAsync(context.Database))
                 {
                     Task.Run(async () =>
                         {
@@ -135,6 +136,8 @@ public class Program
                 {
                     if (isDbCreated)
                     {
+                        await SqliteMigrationRecovery.RemoveEmptyOrphanedVolumeTableAsync(
+                            context.Database, logger, linkedCts.Token);
                         await RpgMigrationCompatibility.MarkConsolidatedMigrationAppliedForLegacyDatabaseAsync(
                             context.Database, logger, linkedCts.Token);
                     }
@@ -153,7 +156,15 @@ public class Program
                 }
                 catch (Exception ex)
                 {
-                    logger.LogCritical(ex, "Failed to run critical Migrations, restore from a backup");
+                    try
+                    {
+                        var nextMigration = (await context.Database.GetPendingMigrationsAsync()).FirstOrDefault();
+                        logger.LogCritical(ex, "Failed to run critical Migrations (next: {MigrationId}), restore from a backup", nextMigration);
+                    }
+                    catch (Exception)
+                    {
+                        logger.LogCritical(ex, "Failed to run critical Migrations, restore from a backup");
+                    }
                     Environment.Exit(1);
                 }
 
