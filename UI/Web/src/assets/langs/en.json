@@ -1899,6 +1899,7 @@
         "read-incognito": "Read in private mode",
         "rpg-version-heading": "Publication versions",
         "rpg-version-help": "Choose a version to open it directly. Each version keeps its own language and reading progress.",
+        "edit-version-language": "Edit language",
         "split-version": "Separate as publication",
         "split-version-title": "New publication title",
         "split-version-help": "Creates a publication with this file, language and progress. Bibliography is copied; external links stay with the original.",

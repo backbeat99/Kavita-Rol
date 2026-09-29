@@ -112,7 +112,9 @@
 }
 .rpg-version-option.selected { border-color: #54a879; background: #24352b; }
 .rpg-version-option input { width: 16px; height: 16px; margin: 0; accent-color: #48c58f; }
-.rpg-version-split { min-height: 44px; white-space: nowrap; }
+.rpg-version-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: .55rem; }
+.rpg-version-actions .btn { min-height: 44px; }
+.rpg-version-split { white-space: nowrap; }
 .rpg-split-panel { margin-top: .45rem; padding: .8rem; border: 1px solid var(--border-color, #414a44); border-radius: .35rem; background: #1a211d; }
 .rpg-split-panel > p:first-child { margin: 0 0 .6rem; color: #c5d0c9; font-size: .82rem; line-height: 1.45; }
 .rpg-split-panel label { display: block; margin-bottom: .3rem; font-size: .83rem; font-weight: 600; }
@@ -140,7 +142,8 @@
   .rpg-bibliography-grid, .rpg-bibliography-edit-grid { grid-template-columns: 1fr; }
   .rpg-version-row { grid-template-columns: minmax(0, 1fr); }
   .rpg-version-option { grid-template-columns: 17px minmax(0, 1fr); gap: .55rem; padding: .65rem; }
-  .rpg-version-split { width: 100%; }
+  .rpg-version-actions { display: grid; grid-template-columns: 1fr; }
+  .rpg-version-actions .btn { width: 100%; }
   .rpg-split-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rpg-split-actions .btn { min-height: 44px; padding-inline: .4rem; }
   .version-progress { grid-column: 2; }

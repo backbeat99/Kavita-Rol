@@ -942,6 +942,7 @@
         "read-incognito": "Leer en modo privado",
         "rpg-version-heading": "Versiones de la publicación",
         "rpg-version-help": "Elige una versión para abrirla directamente. Cada versión conserva su idioma y progreso.",
+        "edit-version-language": "Editar idioma",
         "split-version": "Separar como publicación",
         "split-version-title": "Título de la nueva publicación",
         "split-version-help": "Crea una publicación con este archivo, su idioma y progreso. Copia la bibliografía; los enlaces externos quedan en la original.",

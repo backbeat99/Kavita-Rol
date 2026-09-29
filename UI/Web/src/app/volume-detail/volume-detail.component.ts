@@ -57,6 +57,7 @@ import {EntityTitleComponent} from "../cards/entity-title/entity-title.component
 import {VirtualScrollerModule} from "@iharbeck/ngx-virtual-scroller";
 import {UtilityService} from "../shared/_services/utility.service";
 import {EditVolumeModalComponent} from "../_single-module/edit-volume-modal/edit-volume-modal.component";
+import {EditChapterModalComponent} from "../_single-module/edit-chapter-modal/edit-chapter-modal.component";
 import {RelatedTabChangeEvent, RelatedTabComponent} from "../_single-module/related-tab/related-tab.component";
 import {ReadingList} from "../_models/reading-list/reading-list";
 import {ReadingListService} from "../_services/reading-list.service";
@@ -92,6 +93,7 @@ import {Action} from "../_models/actionables/action";
 import {ModalService} from "../_services/modal.service";
 import {getResolvedData, getWritableResolvedData} from "../../libs/route-util";
 import {ModalResult} from "../_models/modal/modal-result";
+import {editModal} from "../_models/modal/modal-options";
 import {ChapterCardComponent} from "../cards/chapter-card/chapter-card.component";
 import {Tabs} from "../_models/tabs";
 import {TabTitlePipe} from "../_pipes/tab-title.pipe";
@@ -803,6 +805,20 @@ export class VolumeDetailComponent implements OnInit {
     const chapter = this.rpgSelectedChapter();
     if (!chapter) return;
     this.readerService.readChapter(this.libraryId(), this.seriesId(), chapter, incognitoMode);
+  }
+
+  editRpgVersionLanguage(chapter: Chapter): void {
+    if (!this.isRpgPublication() || !this.accountService.hasAdminRole()) return;
+
+    const ref = this.modalService.open(EditChapterModalComponent, editModal());
+    ref.setInput('chapter', chapter);
+    ref.setInput('libraryType', this.libraryType());
+    ref.setInput('libraryId', this.libraryId());
+    ref.setInput('seriesId', this.seriesId());
+    ref.closed.pipe(
+      filter((res: ModalResult<Chapter>) => res.success),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => this.loadVolume());
   }
 
   openEditModal() {

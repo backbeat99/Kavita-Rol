@@ -310,10 +310,19 @@
                   <span class="version-copy"><strong>{{rpgVersionTitle(chapter)}}</strong><small>{{chapter.language || t('version-language-not-set')}} · {{t('version-pages', {read: chapter.pagesRead, total: chapter.pages})}}</small></span>
                   <span class="version-progress">{{chapter.pagesRead > 0 && chapter.pagesRead < chapter.pages ? t('version-in-progress') : (chapter.pages > 0 && chapter.pagesRead >= chapter.pages ? t('version-complete') : t('version-unread'))}}</span>
                 </label>
-                @if (canManagePublicationVersions() && volume().chapters.length > 1) {
-                  <button class="btn btn-outline-secondary rpg-version-split" type="button" [disabled]="splitVersionSaving()" (click)="beginSplitRpgVersion(chapter)">
-                    {{t('split-version')}}
-                  </button>
+                @if (accountService.hasAdminRole() || (canManagePublicationVersions() && volume().chapters.length > 1)) {
+                  <div class="rpg-version-actions">
+                    @if (accountService.hasAdminRole()) {
+                      <button class="btn btn-outline-secondary rpg-version-edit-language" type="button" (click)="editRpgVersionLanguage(chapter)">
+                        {{t('edit-version-language')}}
+                      </button>
+                    }
+                    @if (canManagePublicationVersions() && volume().chapters.length > 1) {
+                      <button class="btn btn-outline-secondary rpg-version-split" type="button" [disabled]="splitVersionSaving()" (click)="beginSplitRpgVersion(chapter)">
+                        {{t('split-version')}}
+                      </button>
+                    }
+                  </div>
                 }
               </div>
               @if (splitVersionChapterId() === chapter.id) {
