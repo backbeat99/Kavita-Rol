@@ -70,6 +70,72 @@ public class RpgScannerIntegrationTests : AbstractDbTest
         }
     }
 
+    [Theory]
+    [InlineData(false, "The Silt Verses - Rulebook")]
+    [InlineData(true, "Rulebook")]
+    public async Task ScanLibrary_Rpg_RestoresFullPublicationTitleWithoutReplacingLegacyIdentityOrLockedNames(
+        bool nameLocked, string expectedName)
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var root = Path.Combine(Path.GetTempPath(), "Kavita-Rpg-Scanner-Integration", Guid.NewGuid().ToString("N"));
+        var folder = Path.Combine(root, "The Silt Verses");
+        Directory.CreateDirectory(folder);
+        File.WriteAllBytes(Path.Combine(folder, "The Silt Verses - Rulebook - Pages.pdf"), []);
+        File.WriteAllBytes(Path.Combine(folder, "The Silt Verses - Rulebook - Spreads.pdf"), []);
+        try
+        {
+            var library = await CreateRpgLibrary(unitOfWork, root);
+            var scanner = new ScannerHelper(unitOfWork, _testOutputHelper).CreateServices();
+            await scanner.ScanLibrary(library.Id);
+            var series = await context.Series.Include(item => item.Volumes)
+                .ThenInclude(volume => volume.Chapters).ThenInclude(chapter => chapter.Files)
+                .SingleAsync(item => item.LibraryId == library.Id);
+            var publication = Assert.Single(series.Volumes);
+            Assert.Equal("The Silt Verses - Rulebook", publication.Name);
+            Assert.Equal(2, publication.Chapters.Count);
+            var publicationId = publication.Id;
+            var originalVersionIds = publication.Chapters.Select(chapter => chapter.Id).OrderBy(id => id).ToArray();
+            publication.LookupName = "Rulebook";
+            publication.Name = "Rulebook";
+            publication.NameLocked = nameLocked;
+            publication.RpgMaterialType = RpgMaterialType.Manual;
+            publication.RpgGeekId = 370894;
+            publication.RpgGeekMatchStatus = RpgGeekMatchStatus.Linked;
+            var admin = await context.Users.SingleAsync(user => user.UserName == "admin");
+            var timestamp = DateTime.UtcNow;
+            context.AppUserProgresses.Add(new AppUserProgress
+            {
+                AppUserId = admin.Id, ChapterId = publication.Chapters[0].Id,
+                LibraryId = library.Id, SeriesId = series.Id, VolumeId = publicationId,
+                PagesRead = 4, TotalReads = 1, Created = timestamp, CreatedUtc = timestamp,
+                LastModified = timestamp, LastModifiedUtc = timestamp
+            });
+            series.LastFolderScanned = DateTime.Now.AddMinutes(-5);
+            series.LastFolderScannedUtc = DateTime.UtcNow.AddMinutes(-5);
+            await context.SaveChangesAsync();
+            context.ChangeTracker.Clear();
+
+            await scanner.ScanLibrary(library.Id);
+            context.ChangeTracker.Clear();
+            var rescanned = await context.Series.Include(item => item.Volumes)
+                .ThenInclude(volume => volume.Chapters).SingleAsync(item => item.Id == series.Id);
+            var updated = Assert.Single(rescanned.Volumes);
+            Assert.Equal(publicationId, updated.Id);
+            Assert.Equal("The Silt Verses - Rulebook", updated.LookupName);
+            Assert.Equal(expectedName, updated.Name);
+            Assert.Equal(370894, updated.RpgGeekId);
+            Assert.Equal(RpgMaterialType.Manual, updated.RpgMaterialType);
+            Assert.Equal(originalVersionIds, updated.Chapters.Select(chapter => chapter.Id).OrderBy(id => id));
+            var progress = await context.AppUserProgresses.SingleAsync();
+            Assert.Equal(publicationId, progress.VolumeId);
+            Assert.Equal(4, progress.PagesRead);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public async Task ScanLibrary_Rpg_RehomesLegacyVersionsWithoutLosingIdsExternalMetadataOrReadingProgress()
     {

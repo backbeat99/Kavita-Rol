@@ -17,9 +17,9 @@ public class RpgManualVersionParserTests
         var epub = Prepare("Asher's Ridge - Interactive.epub", MangaFormat.Epub);
 
         Assert.Equal("Asher's Ridge", pages.Series);
-        Assert.Equal("Interactive", pages.Volumes);
-        Assert.Equal("Interactive", spreads.Volumes);
-        Assert.Equal("Interactive", epub.Volumes);
+        Assert.Equal("Asher's Ridge - Interactive", pages.Volumes);
+        Assert.Equal("Asher's Ridge - Interactive", spreads.Volumes);
+        Assert.Equal("Asher's Ridge - Interactive", epub.Volumes);
         Assert.Equal("PDF (Pages)", pages.Title);
         Assert.Equal("PDF (Spreads)", spreads.Title);
         Assert.Equal("EPUB", epub.Title);
@@ -49,7 +49,7 @@ public class RpgManualVersionParserTests
             new ComicInfo {LanguageISO = "es"});
 
         Assert.Equal("Heart", info.Series);
-        Assert.Equal("Core Rulebook", info.Volumes);
+        Assert.Equal("Heart - Core Rulebook", info.Volumes);
         Assert.Equal("es", info.ComicInfo?.LanguageISO);
     }
 
@@ -58,8 +58,19 @@ public class RpgManualVersionParserTests
     {
         var info = Prepare("Asher's Ridge - Doors to Elsewhere.pdf", MangaFormat.Pdf);
 
-        Assert.Equal("Doors to Elsewhere", info.Volumes);
+        Assert.Equal("Asher's Ridge - Doors to Elsewhere", info.Volumes);
         Assert.Equal("PDF", info.Title);
+    }
+
+    [Fact]
+    public void Keeps_game_name_in_suggested_publication_title_for_metadata_searches()
+    {
+        var pages = Prepare("The Silt Verses - Rulebook - Pages.pdf", MangaFormat.Pdf, "The Silt Verses");
+        var epub = Prepare("The Silt Verses - Rulebook.epub", MangaFormat.Epub, "The Silt Verses");
+
+        Assert.Equal("The Silt Verses", pages.Series);
+        Assert.Equal("The Silt Verses - Rulebook", pages.Volumes);
+        Assert.Equal(pages.Volumes, epub.Volumes);
     }
 
     private static ParserInfo Prepare(string filename, MangaFormat format, string gameFolder = "Asher's Ridge",

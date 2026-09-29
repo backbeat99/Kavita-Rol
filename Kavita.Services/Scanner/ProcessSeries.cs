@@ -938,9 +938,23 @@ public class ProcessSeries(
                 string.Equals(volume.LookupName, group.Key, StringComparison.OrdinalIgnoreCase));
             if (target is null)
             {
-                target = new VolumeBuilder(group.Key).WithSeriesId(series.Id).Build();
-                series.Volumes.Add(target);
-                unitOfWork.VolumeRepository.Add(target);
+                // Older scans stripped the game prefix. Reuse the original publication only when
+                // one of its existing files belongs to this group, preserving IDs and reading progress.
+                target = FindLegacyPrefixedRpgVolume(series, group.Key, group);
+                if (target is not null)
+                {
+                    var previousName = target.LookupName;
+                    target.LookupName = group.Key;
+                    if (!target.NameLocked &&
+                        string.Equals(target.Name, previousName, StringComparison.OrdinalIgnoreCase))
+                        target.Name = group.Key;
+                }
+                else
+                {
+                    target = new VolumeBuilder(group.Key).WithSeriesId(series.Id).Build();
+                    series.Volumes.Add(target);
+                    unitOfWork.VolumeRepository.Add(target);
+                }
             }
 
             var inheritedDriveThruIds = new HashSet<int>();
@@ -968,6 +982,22 @@ public class ProcessSeries(
                 target.DriveThruRpgMatchStatus = DriveThruRpgMatchStatus.Linked;
             }
         }
+    }
+
+    private static Volume? FindLegacyPrefixedRpgVolume(Series series, string fullTitle,
+        IEnumerable<ParserInfo> versions)
+    {
+        var gameName = versions.First().Series;
+        var prefix = gameName + " - ";
+        if (!fullTitle.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return null;
+        var legacyTitle = fullTitle[prefix.Length..];
+        var paths = versions.Select(info => Parser.NormalizePath(info.FullFilePath))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var matches = series.Volumes.Where(volume => !volume.RpgVersionGroupLocked &&
+            string.Equals(volume.LookupName, legacyTitle, StringComparison.OrdinalIgnoreCase) &&
+            volume.Chapters.Any(chapter => chapter.Files.Any(file =>
+                paths.Contains(Parser.NormalizePath(file.FilePath))))).Take(2).ToArray();
+        return matches.Length == 1 ? matches[0] : null;
     }
 
     private Volume FindOrCreateVolume(ProcessParserInfosArgs args, ParserInfo info)

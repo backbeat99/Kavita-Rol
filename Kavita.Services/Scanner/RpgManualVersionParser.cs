@@ -21,13 +21,9 @@ internal static class RpgManualVersionParser
         }
 
         var fileTitle = Path.GetFileNameWithoutExtension(path);
+        // The game's name can be part of the actual product title. Only remove a version suffix,
+        // never the game prefix (e.g. "The Silt Verses - Rulebook" is not just "Rulebook").
         var manualTitle = fileTitle;
-        var seriesPrefix = info.Series + " - ";
-        if (!string.IsNullOrEmpty(info.Series) && manualTitle.StartsWith(seriesPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            manualTitle = manualTitle[seriesPrefix.Length..];
-        }
-
         var versionMarker = VersionMarkers.FirstOrDefault(marker => HasVersionSuffix(fileTitle, marker));
         if (versionMarker is not null)
         {
