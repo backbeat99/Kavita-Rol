@@ -151,6 +151,7 @@ public sealed class RpgGeekMetadataService(
         }
 
         ApplyConfirmedFields(volume, product, request);
+        await RpgPublicationPeopleSync.SyncAsync(volume, unitOfWork, cancellationToken);
         volume.RpgGeekId = product.Id;
         volume.RpgGeekMatchStatus = RpgGeekMatchStatus.Linked;
         volume.RpgGeekLastCheckedUtc = DateTime.UtcNow;
@@ -273,6 +274,7 @@ public sealed class RpgGeekMetadataService(
             var volume = volumesById[request.VolumeId];
             var product = products[request.VolumeId];
             ApplyConfirmedFields(volume, product, request);
+            await RpgPublicationPeopleSync.SyncAsync(volume, unitOfWork, cancellationToken);
             volume.RpgGeekId = product.Id;
             volume.RpgGeekMatchStatus = RpgGeekMatchStatus.Linked;
             volume.RpgGeekLastCheckedUtc = now;

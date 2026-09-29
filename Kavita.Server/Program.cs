@@ -18,6 +18,7 @@ using Kavita.Server.ManualMigrations.v0._7._14;
 using Kavita.Server.ManualMigrations.v0._8._2;
 using Kavita.Server.ManualMigrations.v0._8._4;
 using Kavita.Services;
+using Kavita.Services.Metadata;
 using Kavita.Services.SignalR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -178,6 +179,7 @@ public class Program
                 await Seed.SeedMetadataSettings(context);
                 await Seed.SeedDefaultHighlightSlots(unitOfWork);
                 await Seed.SeedScrobbleProviders(context);
+                await RpgPublicationPeopleSync.BackfillAsync(unitOfWork);
             }
             catch (Exception ex)
             {

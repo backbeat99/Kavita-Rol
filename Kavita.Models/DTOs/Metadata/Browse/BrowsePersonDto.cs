@@ -15,4 +15,6 @@ public class BrowsePersonDto : PersonDto
     /// Number of Issues this Person is the Writer for
     /// </summary>
     public int ChapterCount { get; set; }
+    /// <summary>RPG publications credited to this person, not chapters or series.</summary>
+    public int PublicationCount { get; set; }
 }

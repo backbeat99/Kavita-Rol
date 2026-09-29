@@ -142,12 +142,14 @@ public static class RestrictByAgeExtensions
         {
             return queryable.Where(c =>
                 c.SeriesMetadataPeople.Any(sm => sm.SeriesMetadata.AgeRating <= restriction.AgeRating) ||
-                c.ChapterPeople.Any(cp => cp.Chapter.AgeRating <= restriction.AgeRating));
+                c.ChapterPeople.Any(cp => cp.Chapter.AgeRating <= restriction.AgeRating) ||
+                c.VolumePeople.Any(vp => vp.Volume.Series.Metadata.AgeRating <= restriction.AgeRating));
         }
 
         return queryable.Where(c =>
             c.SeriesMetadataPeople.Any(sm => sm.SeriesMetadata.AgeRating <= restriction.AgeRating && sm.SeriesMetadata.AgeRating != AgeRating.Unknown) ||
-            c.ChapterPeople.Any(cp => cp.Chapter.AgeRating <= restriction.AgeRating && cp.Chapter.AgeRating != AgeRating.Unknown)
+            c.ChapterPeople.Any(cp => cp.Chapter.AgeRating <= restriction.AgeRating && cp.Chapter.AgeRating != AgeRating.Unknown) ||
+            c.VolumePeople.Any(vp => vp.Volume.Series.Metadata.AgeRating <= restriction.AgeRating && vp.Volume.Series.Metadata.AgeRating != AgeRating.Unknown)
         );
     }
 

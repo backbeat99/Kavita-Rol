@@ -37,17 +37,21 @@ public static class PersonFilter
             {
                 FilterComparison.Equal => queryable.Where(p =>
                     p.SeriesMetadataPeople.Any(smp => roles.Contains(smp.Role)) ||
-                    p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role))),
+                    p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role)) ||
+                    p.VolumePeople.Any(vp => roles.Contains(vp.Role))),
                 FilterComparison.NotEqual => queryable.Where(p =>
                     !p.SeriesMetadataPeople.Any(smp => roles.Contains(smp.Role)) &&
-                    !p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role))),
+                    !p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role)) &&
+                    !p.VolumePeople.Any(vp => roles.Contains(vp.Role))),
                 FilterComparison.Contains => queryable.Where(p =>
                     p.SeriesMetadataPeople.Any(smp => roles.Contains(smp.Role)) ||
-                    p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role))),
+                    p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role)) ||
+                    p.VolumePeople.Any(vp => roles.Contains(vp.Role))),
                 FilterComparison.MustContains => MustContainAllRoles(queryable, roles),
                 FilterComparison.NotContains => queryable.Where(p =>
                     !p.SeriesMetadataPeople.Any(smp => roles.Contains(smp.Role)) &&
-                    !p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role))),
+                    !p.ChapterPeople.Any(cmp => roles.Contains(cmp.Role)) &&
+                    !p.VolumePeople.Any(vp => roles.Contains(vp.Role))),
                 _ => throw new ArgumentOutOfRangeException(nameof(comparison), comparison, "Filter Comparison is not supported")
             };
         }
@@ -123,11 +127,11 @@ public static class PersonFilter
 
             return comparison switch
             {
-                FilterComparison.Equal => queryable.Where(a => a.ChapterPeople.Any(cp => cp.Chapter.Volume.Series.LibraryId == libraryIds[0])),
-                FilterComparison.Contains => queryable.Where(a => a.ChapterPeople.Any(cp => libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId))),
-                FilterComparison.MustContains => queryable.Where(a => a.ChapterPeople.All(cp => libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId))),
-                FilterComparison.NotContains => queryable.Where(a => a.ChapterPeople.All(cp => !libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId))),
-                FilterComparison.NotEqual => queryable.Where(a => a.ChapterPeople.All(cp => cp.Chapter.Volume.Series.LibraryId != libraryIds[0])),
+                FilterComparison.Equal => queryable.Where(a => a.ChapterPeople.Any(cp => cp.Chapter.Volume.Series.LibraryId == libraryIds[0]) || a.VolumePeople.Any(vp => vp.Volume.Series.LibraryId == libraryIds[0])),
+                FilterComparison.Contains => queryable.Where(a => a.ChapterPeople.Any(cp => libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId)) || a.VolumePeople.Any(vp => libraryIds.Contains(vp.Volume.Series.LibraryId))),
+                FilterComparison.MustContains => queryable.Where(a => a.ChapterPeople.All(cp => libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId)) && a.VolumePeople.All(vp => libraryIds.Contains(vp.Volume.Series.LibraryId))),
+                FilterComparison.NotContains => queryable.Where(a => a.ChapterPeople.All(cp => !libraryIds.Contains(cp.Chapter.Volume.Series.LibraryId)) && a.VolumePeople.All(vp => !libraryIds.Contains(vp.Volume.Series.LibraryId))),
+                FilterComparison.NotEqual => queryable.Where(a => a.ChapterPeople.All(cp => cp.Chapter.Volume.Series.LibraryId != libraryIds[0]) && a.VolumePeople.All(vp => vp.Volume.Series.LibraryId != libraryIds[0])),
                 _ => throw new ArgumentOutOfRangeException(nameof(comparison), comparison, "Filter Comparison is not supported")
             };
         }
@@ -138,7 +142,8 @@ public static class PersonFilter
         var queries = new List<IQueryable<Person>> { queryable };
         queries.AddRange(roles.Select(role => queryable.Where(p =>
             p.SeriesMetadataPeople.Any(smp => smp.Role == role) ||
-            p.ChapterPeople.Any(cmp => cmp.Role == role))));
+            p.ChapterPeople.Any(cmp => cmp.Role == role) ||
+            p.VolumePeople.Any(vp => vp.Role == role))));
 
         return queries.Aggregate((q1, q2) => q1.Intersect(q2));
     }

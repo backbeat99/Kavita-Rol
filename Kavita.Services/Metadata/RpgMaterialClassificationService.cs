@@ -65,6 +65,8 @@ public sealed class RpgMaterialClassificationService(
             var previousType = volume.RpgMaterialType;
             var nextType = typesById[volume.Id];
             volume.RpgMaterialType = nextType;
+            if (previousType != nextType)
+                await RpgPublicationPeopleSync.SyncAsync(volume, unitOfWork, cancellationToken);
 
             if (!nextType.IsPublication())
             {

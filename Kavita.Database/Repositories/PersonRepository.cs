@@ -58,7 +58,8 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
         var peopleWithNoConnections = await context.Person
             .Include(p => p.SeriesMetadataPeople)
             .Include(p => p.ChapterPeople)
-            .Where(p => p.SeriesMetadataPeople.Count == 0 && p.ChapterPeople.Count == 0)
+            .Include(p => p.VolumePeople)
+            .Where(p => p.SeriesMetadataPeople.Count == 0 && p.ChapterPeople.Count == 0 && p.VolumePeople.Count == 0)
             .AsSplitQuery()
             .ToListAsync(ct);
 
@@ -79,10 +80,10 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
             userLibs = userLibs.Where(libraryIds.Contains).ToList();
         }
 
-        return await context.Series
-            .Where(s => userLibs.Contains(s.LibraryId))
-            .RestrictAgainstAgeRestriction(ageRating)
-            .SelectMany(s => s.Metadata.People.Select(p => p.Person))
+        return await context.Person
+            .Where(p => p.SeriesMetadataPeople.Any(link => userLibs.Contains(link.SeriesMetadata.Series.LibraryId)) ||
+                        p.VolumePeople.Any(link => userLibs.Contains(link.Volume.Series.LibraryId)))
+            .RestrictByAccessibleCredits(context.Library.GetUserLibraries(userId).Where(id => userLibs.Contains(id)), ageRating)
             .Includes(includes)
             .Distinct()
             .OrderBy(p => p.Name)
@@ -126,8 +127,16 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
             .Distinct()
             .ToListAsync(ct);
 
-        // Combine and return distinct roles
-        return chapterRoles.Union(seriesRoles).Distinct();
+        var volumeRoles = await context.Person
+            .Where(p => p.Id == personId)
+            .SelectMany(p => p.VolumePeople)
+            .Where(link => userLibs.Contains(link.Volume.Series.LibraryId) &&
+                           (ageRating.AgeRating == AgeRating.NotApplicable ||
+                            (link.Volume.Series.Metadata.AgeRating <= ageRating.AgeRating &&
+                             (ageRating.IncludeUnknowns || link.Volume.Series.Metadata.AgeRating != AgeRating.Unknown))))
+            .Select(link => link.Role).Distinct().ToListAsync(ct);
+
+        return chapterRoles.Union(seriesRoles).Union(volumeRoles).Distinct();
     }
 
     public async Task<PagedList<BrowsePersonDto>> GetBrowsePersonDtos(int userId, PersonFilterDto filter,
@@ -153,11 +162,8 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
         query = FilterQueryBuilder.Apply(filter, query,
             (stmt, q) => BuildPersonFilterGroup(userId, stmt, q));
 
-        // Apply restrictions
-        query = query.RestrictAgainstAgeRestriction(ageRating)
-            .WhereIf(allLibrariesCount != userLibs.Count,
-                person => person.ChapterPeople.Any(cp => seriesIds.Contains(cp.Chapter.Volume.SeriesId)) ||
-                          person.SeriesMetadataPeople.Any(smp => seriesIds.Contains(smp.SeriesMetadata.SeriesId)));
+        // Library and age must match on the same credit.
+        query = query.RestrictByAccessibleCredits(context.Library.GetUserLibraries(userId), ageRating);
 
         // Apply sorting and limiting
         var sortedQuery = query.SortBy(filter.SortOptions);
@@ -182,6 +188,12 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
                 .RestrictAgainstAgeRestriction(ageRating)
                 .Distinct()
                 .Count(),
+            PublicationCount = p.VolumePeople
+                .Where(vp => allLibrariesCount == userLibs.Count || seriesIds.Contains(vp.Volume.SeriesId))
+                .Where(vp => ageRating.AgeRating == AgeRating.NotApplicable ||
+                             (vp.Volume.Series.Metadata.AgeRating <= ageRating.AgeRating &&
+                              (ageRating.IncludeUnknowns || vp.Volume.Series.Metadata.AgeRating != AgeRating.Unknown)))
+                .Select(vp => vp.VolumeId).Distinct().Count(),
         });
     }
 
@@ -216,10 +228,9 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
         var userLibs = context.Library.GetUserLibraries(userId);
 
         return await context.Person
-            .Where(p => p.NormalizedName == normalized)
+            .Where(p => p.NormalizedName == normalized || p.Aliases.Any(alias => alias.NormalizedAlias == normalized))
             .Includes(includes)
-            .RestrictAgainstAgeRestriction(ageRating)
-            .RestrictByLibrary(userLibs)
+            .RestrictByAccessibleCredits(userLibs, ageRating)
             .ProjectTo<PersonDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(ct);
     }
@@ -276,6 +287,20 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
             .ThenBy(ch => ch.SortOrder)
             .Take(20)
             .ProjectToWithProgress<Chapter, StandaloneChapterDto>(mapper.ConfigurationProvider, userId)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<RpgPersonPublicationDto>> GetRpgPublicationsForPerson(int personId, int userId,
+        CancellationToken ct = default)
+    {
+        var ageRating = await context.AppUser.GetUserAgeRestriction(userId, ct: ct);
+        var userLibs = context.Library.GetUserLibraries(userId);
+        return await context.Volume
+            .Where(volume => volume.People.Any(link => link.PersonId == personId && link.Role == PersonRole.Writer))
+            .Where(volume => userLibs.Contains(volume.Series.LibraryId))
+            .RestrictAgainstAgeRestriction(ageRating)
+            .OrderBy(volume => volume.Name)
+            .Select(volume => new RpgPersonPublicationDto(volume.Id, volume.Name, volume.SeriesId, volume.Series.LibraryId))
             .ToListAsync(ct);
     }
 
@@ -347,8 +372,7 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
 
         return await context.Person
             .Includes(includes)
-            .RestrictAgainstAgeRestriction(ageRating)
-            .RestrictByLibrary(userLibs)
+            .RestrictByAccessibleCredits(userLibs, ageRating)
             .OrderBy(p => p.Name)
             .ProjectTo<PersonDto>(mapper.ConfigurationProvider)
             .ToListAsync(ct);
@@ -361,10 +385,11 @@ public class PersonRepository(DataContext context, IMapper mapper) : IPersonRepo
         var userLibs = context.Library.GetUserLibraries(userId);
 
         return await context.Person
-            .Where(p => p.SeriesMetadataPeople.Any(smp => smp.Role == role) || p.ChapterPeople.Any(cp => cp.Role == role)) // Filter by role in both series and chapters
+            .Where(p => p.SeriesMetadataPeople.Any(smp => smp.Role == role) ||
+                        p.ChapterPeople.Any(cp => cp.Role == role) ||
+                        p.VolumePeople.Any(vp => vp.Role == role))
             .Includes(includes)
-            .RestrictAgainstAgeRestriction(ageRating)
-            .RestrictByLibrary(userLibs)
+            .RestrictByAccessibleCredits(userLibs, ageRating)
             .OrderBy(p => p.Name)
             .ProjectTo<PersonDto>(mapper.ConfigurationProvider)
             .ToListAsync(ct);

@@ -19,8 +19,9 @@ public enum PersonIncludes
     Aliases = 1 << 1,
     ChapterPeople = 1 << 2,
     SeriesPeople = 1 << 3,
+    VolumePeople = 1 << 4,
 
-    All = Aliases | ChapterPeople | SeriesPeople,
+    All = Aliases | ChapterPeople | SeriesPeople | VolumePeople,
 }
 
 public interface IPersonRepository
@@ -55,6 +56,7 @@ public interface IPersonRepository
 
     Task<IEnumerable<SeriesDto>> GetSeriesKnownFor(int personId, int userId, CancellationToken ct = default);
     Task<IEnumerable<StandaloneChapterDto>> GetChaptersForPersonByRole(int personId, int userId, PersonRole role, CancellationToken ct = default);
+    Task<IReadOnlyList<RpgPersonPublicationDto>> GetRpgPublicationsForPerson(int personId, int userId, CancellationToken ct = default);
 
     /// <summary>
     /// Returns all people with a matching name, or alias

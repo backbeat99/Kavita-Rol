@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal} from '@angular/core';
-import {ActivatedRoute, Router} from "@angular/router";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {PersonService} from "../_services/person.service";
 import {Observable} from "rxjs";
 import {Person, PersonRole} from "../_models/metadata/person";
@@ -34,6 +34,7 @@ import {SeriesCardComponent} from "../cards/series-card/series-card.component";
 import {ActionResult} from "../_models/actionables/action-result";
 import {getWritableResolvedData} from "../../libs/route-util";
 import {StandaloneChapter} from "../_models/standalone-chapter";
+import {RpgPersonPublication} from '../_models/metadata/rpg-person-publication';
 
 interface PersonMergeEvent {
   srcId: number,
@@ -56,7 +57,8 @@ interface PersonMergeEvent {
     ChapterCardComponent,
     SafeUrlPipe,
     BadgeExpanderComponent,
-    SeriesCardComponent
+    SeriesCardComponent,
+    RouterLink
   ],
   templateUrl: './person-detail.component.html',
   styleUrl: './person-detail.component.scss',
@@ -79,6 +81,7 @@ export class PersonDetailComponent {
   person = getWritableResolvedData(this.route, 'person');
   personName = computed(() => this.person().name);
   works = signal<Series[]>([]);
+  publications = signal<RpgPersonPublication[]>([]);
   filter = signal<FilterV2<SeriesFilterField> | null>(null);
   hasCoverImage = computed(() => this.person().coverImage);
   personActions = this.actionService.getPersonActions();
@@ -119,6 +122,7 @@ export class PersonDetailComponent {
 
     // Fetch series known for this person
     this.personService.getSeriesMostKnownFor(person.id).subscribe(series => this.works.set(series));
+    this.personService.getRpgPublications(person.id).subscribe(publications => this.publications.set(publications));
   }
 
   createFilter(roles: PersonRole[]) {

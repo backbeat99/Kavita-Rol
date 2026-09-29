@@ -220,6 +220,7 @@ public sealed class DriveThruRpgMetadataService(
         }
 
         ApplyProduct(volume, product);
+        await RpgPublicationPeopleSync.SyncAsync(volume, unitOfWork, cancellationToken);
         volume.DriveThruRpgId = product.ProductId;
         Complete(volume, DriveThruRpgMatchStatus.Linked);
         unitOfWork.VolumeRepository.Update(volume);

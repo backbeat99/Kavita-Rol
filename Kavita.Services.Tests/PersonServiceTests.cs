@@ -4,6 +4,7 @@ using Kavita.Database.Tests;
 using Kavita.Models.Builders;
 using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Person;
+using Microsoft.EntityFrameworkCore;
 using Kavita.Services.Builders;
 using Xunit.Abstractions;
 
@@ -81,6 +82,36 @@ public class PersonServiceTests(ITestOutputHelper outputHelper): AbstractDbTest(
         await ps.MergePeopleAsync(person2, person1);
         var allPeople = await unitOfWork.PersonRepository.GetAllPeople();
         Assert.Single(allPeople);
+    }
+
+    [Fact]
+    public async Task PersonMerge_Retains_publication_writer_credit()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var source = new PersonBuilder("Alias Writer").Build();
+        var destination = new PersonBuilder("Real Writer").Build();
+        context.Person.AddRange(source, destination);
+        var library = new LibraryBuilder("RPG").Build();
+        library.Type = LibraryType.Rpg;
+        context.Library.Add(library);
+        await unitOfWork.CommitAsync();
+        var series = new SeriesBuilder("Game").WithLibraryId(library.Id).Build();
+        context.Series.Add(series);
+        await unitOfWork.CommitAsync();
+        var volume = new VolumeBuilder("Adventure").WithSeriesId(series.Id).Build();
+        volume.RpgMaterialType = RpgMaterialType.Adventure;
+        volume.People.Add(new VolumePeople {Person = source, Role = PersonRole.Writer});
+        context.Volume.Add(volume);
+        await unitOfWork.CommitAsync();
+
+        var mergedSource = await unitOfWork.PersonRepository.GetPersonById(source.Id, PersonIncludes.All);
+        var mergedDestination = await unitOfWork.PersonRepository.GetPersonById(destination.Id, PersonIncludes.All);
+        await new PersonService(unitOfWork).MergePeopleAsync(mergedSource!, mergedDestination!);
+
+        var link = Assert.Single(await context.VolumePeople.ToListAsync());
+        Assert.Equal(destination.Id, link.PersonId);
+        Assert.Equal(volume.Id, link.VolumeId);
+        Assert.Equal(PersonRole.Writer, link.Role);
     }
 
     [Fact]

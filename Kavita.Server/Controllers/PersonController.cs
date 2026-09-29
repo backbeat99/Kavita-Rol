@@ -260,6 +260,15 @@ public class PersonController(
         return Ok(await unitOfWork.PersonRepository.GetChaptersForPersonByRole(personId, UserId, role, ct));
     }
 
+    /// <summary>Publication-level Writer credits, without attributing publications to the whole series.</summary>
+    [PersonAccess]
+    [HttpGet("rpg-publications")]
+    public async Task<ActionResult<IReadOnlyList<RpgPersonPublicationDto>>> GetRpgPublications(int personId)
+    {
+        return Ok(await unitOfWork.PersonRepository.GetRpgPublicationsForPerson(personId, UserId,
+            HttpContext.RequestAborted));
+    }
+
     /// <summary>
     /// Merges Persons into one, this action is irreversible
     /// </summary>

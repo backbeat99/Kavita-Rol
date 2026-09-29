@@ -188,7 +188,11 @@
               <dl class="rpg-bibliography-grid">
                 <div><dt>{{t('rpg-title')}}</dt><dd>{{volume().name}}</dd></div>
                 <div><dt>{{t('rpg-year')}}</dt><dd>{{volume().rpgPublicationYear || t('rpg-empty')}}</dd></div>
-                <div><dt>{{t('rpg-writers')}}</dt><dd>{{volume().rpgWriters?.join(', ') || t('rpg-empty')}}</dd></div>
+                <div><dt>{{t('rpg-writers')}}</dt><dd>
+                  @for (writer of volume().rpgWriters; track writer; let last = $last) {
+                    <a [routerLink]="['/person', writer]">{{writer}}</a>@if (!last) {, }
+                  } @empty { {{t('rpg-empty')}} }
+                </dd></div>
                 <div><dt>{{t('rpg-publishers')}}</dt><dd>{{volume().rpgPublishers?.join(', ') || t('rpg-empty')}}</dd></div>
               </dl>
               <h3>{{t('rpg-summary')}}</h3>

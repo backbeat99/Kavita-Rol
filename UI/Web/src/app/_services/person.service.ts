@@ -12,6 +12,7 @@ import {TextResonse} from "../_types/text-response";
 import {FilterV2} from "../_models/metadata/v2/filter-v2";
 import {PersonFilterField} from "../_models/metadata/v2/person-filter-field";
 import {PersonSortField} from "../_models/metadata/v2/person-sort-field";
+import {RpgPersonPublication} from '../_models/metadata/rpg-person-publication';
 
 @Injectable({
   providedIn: 'root'
@@ -41,6 +42,10 @@ export class PersonService {
 
   getSeriesMostKnownFor(personId: number) {
     return this.httpClient.get<Array<Series>>(this.baseUrl + `person/series-known-for?personId=${personId}`);
+  }
+
+  getRpgPublications(personId: number) {
+    return this.httpClient.get<RpgPersonPublication[]>(this.baseUrl + `person/rpg-publications?personId=${personId}`);
   }
 
   getChaptersByRole(personId: number, role: PersonRole) {

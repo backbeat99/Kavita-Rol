@@ -351,6 +351,11 @@ public static class IncludesExtensions
             queryable = queryable.Include(p => p.SeriesMetadataPeople);
         }
 
+        if (includeFlags.HasFlag(PersonIncludes.VolumePeople))
+        {
+            queryable = queryable.Include(p => p.VolumePeople);
+        }
+
         return queryable;
     }
 }

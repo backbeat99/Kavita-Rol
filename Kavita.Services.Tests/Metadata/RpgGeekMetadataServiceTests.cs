@@ -179,6 +179,10 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
         Assert.Equal("Local summary", saved.Summary);
         Assert.Equal(2021, saved.RpgPublicationYear);
         Assert.Equal(new[] { "Local writer" }, saved.RpgWriters);
+        Assert.Equal("Local writer", await _context.VolumePeople.Where(link => link.VolumeId == volume.Id)
+            .Select(link => link.Person.Name).SingleAsync());
+        Assert.Empty(await _context.ChapterPeople.ToListAsync());
+        Assert.Empty(await _context.SeriesMetadataPeople.ToListAsync());
         Assert.Equal(new[] { "External publisher" }, saved.RpgPublishers);
         Assert.Equal("es", await _context.Chapter.Where(item => item.VolumeId == volume.Id)
             .Select(item => item.Language).SingleAsync());
@@ -233,9 +237,9 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
         await _context.SaveChangesAsync();
 
         var firstProduct = new RpgGeekProduct(370894, "Frontier Scum", 2022, "An acid western RPG.",
-            ["Karl Druid"], ["Games Omnivorous"], null);
+            ["Karl Druid", "Shared Writer"], ["Games Omnivorous"], null);
         var secondProduct = new RpgGeekProduct(370895, "Trapped in the Tropics", 2020, "A Pirate Borg adventure.",
-            ["Luca Rejec"], ["Limithron"], null);
+            ["Luca Rejec", "Shared Writer"], ["Limithron"], null);
         _client.GetProductAsync(firstProduct.Id, Arg.Any<CancellationToken>()).Returns(firstProduct);
         _client.GetProductAsync(secondProduct.Id, Arg.Any<CancellationToken>()).Returns(secondProduct);
 
@@ -260,7 +264,11 @@ public class RpgGeekMetadataServiceTests : IAsyncLifetime
         var savedSecond = await Reload(second.Id);
         Assert.Equal(secondProduct.Id, savedSecond.RpgGeekId);
         Assert.Equal(secondProduct.Description, savedSecond.Summary);
-        Assert.Equal(new[] { "Luca Rejec" }, savedSecond.RpgWriters);
+        Assert.Equal(new[] { "Luca Rejec", "Shared Writer" }, savedSecond.RpgWriters);
+        Assert.Equal(4, await _context.VolumePeople.CountAsync());
+        Assert.Equal(3, await _context.Person.CountAsync());
+        Assert.Empty(await _context.ChapterPeople.ToListAsync());
+        Assert.Empty(await _context.SeriesMetadataPeople.ToListAsync());
     }
 
     [Fact]

@@ -46,6 +46,7 @@ public class Person : IHasCoverImage
 
     // Relationships
     public ICollection<ChapterPeople> ChapterPeople { get; set; } = [];
+    public ICollection<VolumePeople> VolumePeople { get; set; } = [];
     public ICollection<SeriesMetadataPeople> SeriesMetadataPeople { get; set; } = [];
 
 

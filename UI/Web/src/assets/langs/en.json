@@ -2292,6 +2292,7 @@
     "browse-people": {
         "title": "Browse People",
         "author-count": "{{num}} People",
+        "publication-count": "{{num}} publications",
         "cover-image-description": "{{edit-series-modal.cover-image-description}}",
         "issue-count": "{{common.issue-count}}",
         "series-count": "{{common.series-count}}",
@@ -2323,6 +2324,7 @@
     },
 
     "person-detail": {
+        "rpg-publications-title": "RPG publications",
         "aka-title": "Also known as ",
         "known-for-title": "Known For",
         "individual-role-title": "As a {{role}}",

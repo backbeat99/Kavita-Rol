@@ -92,6 +92,7 @@ public sealed class RpgPublicationGroupingService(IUnitOfWork unitOfWork) : IRpg
         }
 
         MergeSharedBibliography(primary, sources, materialTypes);
+        await RpgPublicationPeopleSync.SyncAsync(primary, unitOfWork, cancellationToken);
         primary.RpgVersionGroupLocked = true;
 
         foreach (var source in sources)
@@ -164,6 +165,7 @@ public sealed class RpgPublicationGroupingService(IUnitOfWork unitOfWork) : IRpg
         {
             unitOfWork.VolumeRepository.Add(splitVolume);
             await context.SaveChangesAsync(cancellationToken);
+            await RpgPublicationPeopleSync.SyncAsync(splitVolume, unitOfWork, cancellationToken);
 
             source.Chapters.Remove(chapter);
             splitVolume.Chapters.Add(chapter);

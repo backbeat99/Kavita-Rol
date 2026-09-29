@@ -74,6 +74,7 @@ public interface IDataContext : IDisposable
 
     DbSet<AppUserCollection> AppUserCollection { get; }
     DbSet<ChapterPeople> ChapterPeople { get; }
+    DbSet<VolumePeople> VolumePeople { get; }
     DbSet<SeriesMetadataPeople> SeriesMetadataPeople { get; }
     DbSet<EmailHistory> EmailHistory { get; }
     DbSet<MetadataSettings> MetadataSettings { get; }

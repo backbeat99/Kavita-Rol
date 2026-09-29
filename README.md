@@ -24,7 +24,7 @@ your reading collection with your friends and family!
 Kavita-Rol is an independent fork of [Kavita](https://github.com/Kareadita/Kavita) that adds first-class support for tabletop RPG collections while retaining Kavita's reading server and readers.
 
 - Organizes RPG libraries into games, publications, and resources, with tools to classify and group publication versions.
-- Adds editable local publication metadata, with field locks to protect values from automatic updates.
+- Adds editable local publication metadata, with field locks to protect values from automatic updates. Writers and designers appear in People as publication-level Writer credits, not as version or game credits.
 - Adds optional RPGGeek candidate review and DriveThruRPG search/linking; administrators can also edit provider IDs under External IDs.
 
 ## What Kavita Provides

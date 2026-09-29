@@ -257,7 +257,7 @@ public class UserRepository(DataContext context, UserManager<AppUser> userManage
     {
         var userRating = await context.AppUser.GetUserAgeRestriction(userId, ct: ct);
         return await context.Person
-            .RestrictAgainstAgeRestriction(userRating)
+            .RestrictByAccessibleCredits(context.Library.GetUserLibraries(userId), userRating)
             .AnyAsync(p => p.Id == personId, ct);
     }
 

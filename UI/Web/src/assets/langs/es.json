@@ -2789,6 +2789,7 @@
         "prompt": "Pregunta"
     },
     "person-detail": {
+        "rpg-publications-title": "Publicaciones RPG",
         "known-for-title": "Conocido por",
         "individual-role-title": "Como {{role}}",
         "browse-person-title": "Todas las obras de {{name}}",
@@ -3371,6 +3372,7 @@
         "lightNovel": "Biblioteca con manejo especial optimizado para novelas ligeras"
     },
     "browse-people": {
+        "publication-count": "{{num}} publicaciones",
         "roles-label": "{{common.roles}}",
         "issue-count": "{{common.issue-count}}",
         "series-count": "{{common.series-count}}",

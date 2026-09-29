@@ -68,8 +68,12 @@ public class VolumeController(IUnitOfWork unitOfWork, ILocalizationService local
                 return BadRequest(await localizationService.TranslateAsync(UserId, errorKey));
             }
 
-            if (dto.RpgBibliography is not null && !RpgBibliographyEditor.TryApply(volume, dto.RpgBibliography))
-                return BadRequest(await localizationService.TranslateAsync(UserId, "rpg-bibliography-invalid"));
+            if (dto.RpgBibliography is not null)
+            {
+                if (!RpgBibliographyEditor.TryApply(volume, dto.RpgBibliography))
+                    return BadRequest(await localizationService.TranslateAsync(UserId, "rpg-bibliography-invalid"));
+                await RpgPublicationPeopleSync.SyncAsync(volume, unitOfWork, ct);
+            }
             if (dto.RpgExternalMetadataIds is not null &&
                 !RpgExternalMetadataIdEditor.TryApply(volume, dto.RpgExternalMetadataIds))
                 return BadRequest(await localizationService.TranslateAsync(UserId, "rpg-external-id-invalid"));

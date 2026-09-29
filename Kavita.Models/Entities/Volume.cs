@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Interfaces;
+using Kavita.Models.Entities.Person;
 using Kavita.Models.Entities.MetadataMatching;
 
 namespace Kavita.Models.Entities;
@@ -101,6 +102,7 @@ public class Volume : IEntityDate, IHasReadTimeEstimate, IHasCoverImage, IHasMet
 
     // Relationships
     public IList<Chapter> Chapters { get; set; } = null!;
+    public ICollection<VolumePeople> People { get; set; } = [];
     public Series Series { get; set; } = null!;
     public int SeriesId { get; set; }
 

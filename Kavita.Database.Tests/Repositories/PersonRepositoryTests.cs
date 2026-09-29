@@ -164,6 +164,41 @@ public class PersonRepositoryTests(ITestOutputHelper outputHelper): AbstractDbTe
     }
 
     [Fact]
+    public async Task Publication_writer_is_visible_only_in_its_accessible_publications_not_as_a_series_or_chapter_credit()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var (fullAccess, restrictedAccess, restrictedAgeAccess) = await Setup(context);
+        var writer = new PersonBuilder("Publication-only writer").WithAlias("Publication Alias").Build();
+        context.Person.Add(writer);
+        var volume0 = context.Volume.First(volume => volume.Series.Name == "lib0-s0");
+        var volume1 = context.Volume.First(volume => volume.Series.Name == "lib1-s0");
+        volume0.RpgMaterialType = RpgMaterialType.Adventure;
+        volume1.RpgMaterialType = RpgMaterialType.Adventure;
+        context.VolumePeople.AddRange(
+            new VolumePeople {VolumeId = volume0.Id, Person = writer, Role = PersonRole.Writer},
+            new VolumePeople {VolumeId = volume1.Id, Person = writer, Role = PersonRole.Writer});
+        await context.SaveChangesAsync();
+
+        Assert.Equal(2, (await unitOfWork.PersonRepository.GetRpgPublicationsForPerson(writer.Id, fullAccess.Id)).Count);
+        Assert.Equal(volume1.Id, Assert.Single(await unitOfWork.PersonRepository.GetRpgPublicationsForPerson(writer.Id, restrictedAccess.Id)).Id);
+        Assert.Empty(await unitOfWork.PersonRepository.GetRpgPublicationsForPerson(writer.Id, restrictedAgeAccess.Id));
+        Assert.Equal(writer.Id, (await unitOfWork.PersonRepository.GetPersonDtoByName("Publication Alias", restrictedAccess.Id))?.Id);
+        Assert.Contains(PersonRole.Writer, await unitOfWork.PersonRepository.GetRolesForPersonByName(writer.Id, restrictedAccess.Id));
+        Assert.Empty(await unitOfWork.PersonRepository.GetRolesForPersonByName(writer.Id, restrictedAgeAccess.Id));
+        Assert.Contains(await unitOfWork.PersonRepository.GetAllPersonDtosByRoleAsync(restrictedAccess.Id, PersonRole.Writer),
+            person => person.Id == writer.Id);
+        Assert.DoesNotContain(await unitOfWork.PersonRepository.GetAllPersonDtosAsync(restrictedAgeAccess.Id),
+            person => person.Id == writer.Id);
+
+        var browse = await unitOfWork.PersonRepository.GetBrowsePersonDtos(restrictedAccess.Id,
+            new PersonFilterDto(), new UserParams());
+        var entry = Assert.Single(browse, person => person.Id == writer.Id);
+        Assert.Equal(1, entry.PublicationCount);
+        Assert.Equal(0, entry.SeriesCount);
+        Assert.Equal(0, entry.ChapterCount);
+    }
+
+    [Fact]
     public async Task GetBrowsePersonDtos()
     {
         var (unitOfWork, context, mapper) = await CreateDatabase();

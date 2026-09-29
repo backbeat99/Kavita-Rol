@@ -87,6 +87,17 @@
     }
 
 
+    @if (publications().length > 0) {
+      <section class="row mt-2">
+        <h3>{{t('rpg-publications-title')}}</h3>
+        <ul class="list-unstyled">
+          @for (publication of publications(); track publication.id) {
+            <li><a [routerLink]="['/library', publication.libraryId, 'series', publication.seriesId, 'volume', publication.id]">{{publication.name}}</a></li>
+          }
+        </ul>
+      </section>
+    }
+
    <!-- Individual Works Carousel -->
    @for(role of (person.roles || []); track role) {
      <div class="row mt-2">

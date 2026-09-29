@@ -84,6 +84,7 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
     public DbSet<SeriesBlacklist> SeriesBlacklist { get; set; } = null!;
     public DbSet<AppUserCollection> AppUserCollection { get; set; } = null!;
     public DbSet<ChapterPeople> ChapterPeople { get; set; } = null!;
+    public DbSet<VolumePeople> VolumePeople { get; set; } = null!;
     public DbSet<SeriesMetadataPeople> SeriesMetadataPeople { get; set; } = null!;
     public DbSet<EmailHistory> EmailHistory { get; set; } = null!;
     public DbSet<MetadataSettings> MetadataSettings { get; set; } = null!;
@@ -225,6 +226,14 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
             .HasJsonConversion([])
             .HasColumnType("TEXT")
             .HasDefaultValue(new List<MetadataSettingField>());
+
+        builder.Entity<VolumePeople>().HasKey(vp => new { vp.VolumeId, vp.PersonId, vp.Role });
+        builder.Entity<VolumePeople>()
+            .HasOne(vp => vp.Volume).WithMany(v => v.People)
+            .HasForeignKey(vp => vp.VolumeId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<VolumePeople>()
+            .HasOne(vp => vp.Person).WithMany(p => p.VolumePeople)
+            .HasForeignKey(vp => vp.PersonId).OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<Volume>()
             .Property(volume => volume.RpgMaterialType)

@@ -49,6 +49,7 @@ public class PersonService(IUnitOfWork unitOfWork): IPersonService
 
         MergeChapterPeople(dst, src);
         MergeSeriesMetadataPeople(dst, src);
+        MergeVolumePeople(dst, src);
 
         dst.Aliases.Add(new PersonAliasBuilder(src.Name).Build());
 
@@ -99,6 +100,20 @@ public class PersonService(IUnitOfWork unitOfWork): IPersonService
                 Person = dst,
                 KavitaPlusConnection = series.KavitaPlusConnection,
                 OrderWeight = series.OrderWeight,
+            });
+        }
+    }
+
+    private static void MergeVolumePeople(Person dst, Person src)
+    {
+        foreach (var credit in src.VolumePeople)
+        {
+            if (dst.VolumePeople.Any(link => link.VolumeId == credit.VolumeId && link.Role == credit.Role)) continue;
+            dst.VolumePeople.Add(new VolumePeople
+            {
+                VolumeId = credit.VolumeId,
+                Person = dst,
+                Role = credit.Role
             });
         }
     }
