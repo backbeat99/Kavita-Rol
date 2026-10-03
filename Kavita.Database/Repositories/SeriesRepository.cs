@@ -501,6 +501,16 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
             .ToListAsync(ct);
     }
 
+    public async Task<IList<Series>> GetSeriesForBulkTagUpdateAsync(IList<int> seriesIds, CancellationToken ct = default)
+    {
+        return await context.Series
+            .Where(s => seriesIds.Contains(s.Id))
+            .Include(s => s.Metadata)
+            .ThenInclude(m => m.Tags)
+            .AsSplitQuery()
+            .ToListAsync(ct);
+    }
+
     public async Task<IList<SeriesDto>> GetSeriesDtoByIdsAsync(IEnumerable<int> seriesIds, AppUser user,
         CancellationToken ct = default)
     {

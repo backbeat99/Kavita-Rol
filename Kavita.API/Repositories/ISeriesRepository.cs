@@ -79,6 +79,7 @@ public interface ISeriesRepository
     Task<Series?> GetSeriesByIdAsync(int seriesId, SeriesIncludes includes = SeriesIncludes.Volumes | SeriesIncludes.Metadata, CancellationToken ct = default);
     Task<IList<SeriesDto>> GetSeriesDtoByIdsAsync(IEnumerable<int> seriesIds, AppUser user, CancellationToken ct = default);
     Task<IList<Series>> GetSeriesByIdsAsync(IList<int> seriesIds, bool fullSeries = true, CancellationToken ct = default);
+    Task<IList<Series>> GetSeriesForBulkTagUpdateAsync(IList<int> seriesIds, CancellationToken ct = default);
     Task<int[]> GetChapterIdsForSeriesAsync(IList<int> seriesIds, CancellationToken ct = default);
     Task<IDictionary<int, IList<int>>> GetChapterIdWithSeriesIdForSeriesAsync(int[] seriesIds, CancellationToken ct = default);
     Task<long> GetFilesizeAsync(int seriesId, CancellationToken ct = default);

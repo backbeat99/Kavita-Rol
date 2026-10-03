@@ -198,6 +198,10 @@ export class SeriesService {
     return this.httpClient.post(this.baseUrl + 'series/metadata', data, TextResonse);
   }
 
+  bulkUpdateTags(seriesIds: number[], tagTitles: string[], remove: boolean) {
+    return this.httpClient.post(this.baseUrl + 'series/bulk-update-tags', {seriesIds, tagTitles, remove}, TextResonse);
+  }
+
   getSeriesForTag(collectionTagId: number, pageNum?: number, itemsPerPage?: number) {
     let params = new HttpParams();
 

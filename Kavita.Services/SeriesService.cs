@@ -13,6 +13,7 @@ using Kavita.Common.Extensions;
 using Kavita.Common.Helpers;
 using Kavita.Models.Builders;
 using Kavita.Models.DTOs;
+using Kavita.Models.DTOs.Metadata;
 using Kavita.Models.DTOs.Filtering;
 using Kavita.Models.DTOs.Filtering.v2;
 using Kavita.Models.DTOs.Filtering.v2.Requests;
@@ -91,6 +92,101 @@ public class SeriesService(
         }
 
         return minChapter;
+    }
+
+    /// <summary>
+    /// Adds or removes a set of tags from multiple series without replacing their other metadata.
+    /// </summary>
+    public async Task<bool> BulkUpdateSeriesTags(BulkUpdateSeriesTagsDto dto, CancellationToken ct = default)
+    {
+        var seriesIds = dto.SeriesIds.Where(id => id > 0).Distinct().ToList();
+        var normalizedToTitle = dto.TagTitles
+            .Where(title => !string.IsNullOrWhiteSpace(title))
+            .Select(title => title.Trim())
+            .GroupBy(title => title.ToNormalized())
+            .ToDictionary(group => group.Key, group => group.First());
+
+        if (seriesIds.Count == 0 || normalizedToTitle.Count == 0) return false;
+
+        var series = await unitOfWork.SeriesRepository.GetSeriesForBulkTagUpdateAsync(seriesIds, ct);
+        if (series.Count != seriesIds.Count) return false;
+
+        var normalizedTitles = normalizedToTitle.Keys.ToList();
+        var tagsByNormalizedTitle = (await unitOfWork.TagRepository.GetAllTagsByNameAsync(normalizedTitles, ct))
+            .ToDictionary(tag => tag.NormalizedTitle);
+
+        if (!dto.Remove)
+        {
+            foreach (var (normalizedTitle, title) in normalizedToTitle)
+            {
+                if (tagsByNormalizedTitle.ContainsKey(normalizedTitle)) continue;
+
+                var tag = new Tag {Title = title, NormalizedTitle = normalizedTitle};
+                unitOfWork.DataContext.Tag.Add(tag);
+                tagsByNormalizedTitle.Add(normalizedTitle, tag);
+            }
+        }
+
+        var changed = false;
+        foreach (var item in series)
+        {
+            if (item.Metadata == null)
+            {
+                if (dto.Remove) continue;
+
+                item.Metadata = new SeriesMetadataBuilder().Build();
+                item.Metadata.SeriesId = item.Id;
+                item.Metadata.Series = item;
+            }
+
+            item.Metadata.Tags ??= [];
+            var metadataChanged = false;
+
+            if (dto.Remove)
+            {
+                var matchingTags = item.Metadata.Tags
+                    .Where(tag => normalizedToTitle.ContainsKey(tag.NormalizedTitle))
+                    .ToList();
+
+                foreach (var tag in matchingTags)
+                {
+                    item.Metadata.Tags.Remove(tag);
+                    metadataChanged = true;
+                }
+            }
+            else
+            {
+                foreach (var normalizedTitle in normalizedTitles)
+                {
+                    if (item.Metadata.Tags.Any(tag => tag.NormalizedTitle == normalizedTitle)) continue;
+                    item.Metadata.Tags.Add(tagsByNormalizedTitle[normalizedTitle]);
+                    metadataChanged = true;
+                }
+            }
+
+            if (!metadataChanged) continue;
+
+            item.Metadata.TagsLocked = true;
+            item.Metadata.KPlusOverrides.Remove(MetadataSettingField.Tags);
+            changed = true;
+        }
+
+        if (!changed) return true;
+        if (!await unitOfWork.CommitAsync(ct)) return false;
+
+        if (dto.Remove)
+        {
+            try
+            {
+                await taskScheduler.CleanupDbEntries();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "There was an issue cleaning up unused tags after a bulk tag removal");
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

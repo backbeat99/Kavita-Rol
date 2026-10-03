@@ -17,6 +17,7 @@ using Kavita.Models.DTOs;
 using Kavita.Models.DTOs.Dashboard;
 using Kavita.Models.DTOs.Filtering.v2;
 using Kavita.Models.DTOs.Filtering.v2.Requests;
+using Kavita.Models.DTOs.Metadata;
 using Kavita.Models.DTOs.Metadata.Matching;
 using Kavita.Models.DTOs.Recommendation;
 using Kavita.Models.DTOs.KavitaPlus.ExternalMetadata;
@@ -466,7 +467,26 @@ public class SeriesController(
             return BadRequest(await localizationService.TranslateAsync(UserId, "update-metadata-fail"));
 
         return Ok(await localizationService.TranslateAsync(UserId, "series-updated"));
+    }
 
+    /// <summary>
+    /// Adds or removes tags on multiple series without changing their other metadata.
+    /// </summary>
+    [HttpPost("bulk-update-tags")]
+    [Authorize(PolicyGroups.AdminPolicy)]
+    public async Task<ActionResult> BulkUpdateSeriesTags(BulkUpdateSeriesTagsDto dto)
+    {
+        var ct = HttpContext.RequestAborted;
+        if (dto.SeriesIds is not {Count: > 0} || dto.TagTitles is not {Count: > 0} ||
+            dto.TagTitles.Any(string.IsNullOrWhiteSpace))
+        {
+            return BadRequest(await localizationService.TranslateAsync(UserId, "invalid-payload"));
+        }
+
+        if (!await seriesService.BulkUpdateSeriesTags(dto, ct))
+            return BadRequest(await localizationService.TranslateAsync(UserId, "update-metadata-fail"));
+
+        return Ok();
     }
 
     /// <summary>

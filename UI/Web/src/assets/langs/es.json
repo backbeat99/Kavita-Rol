@@ -2577,6 +2577,8 @@
         "add-to-reading-list-tooltip": "Añadir a una lista de lectura",
         "add-to-collection": "Añadir a la colección",
         "add-to-collection-tooltip": "Añadir series a una colección",
+        "manage-series-tags": "Gestionar etiquetas",
+        "manage-series-tags-tooltip": "Añadir o quitar etiquetas de una o varias series",
         "send-to": "Enviar a",
         "delete": "Borrar",
         "delete-tooltip": "Esta decisión no se puede deshacer",
@@ -3405,6 +3407,21 @@
         "hidden": "{{amount}} perfil(es) oculto(s) debido a un estado inválido",
         "title": "Definir Perfil de lectura",
         "close": "{{common.close}}"
+    },
+    "bulk-manage-series-tags": {
+        "title": "Gestionar etiquetas de series",
+        "description": "Elige cómo actualizar las etiquetas de las {{count}} series seleccionadas.",
+        "operation-label": "Acción",
+        "add-label": "Añadir las etiquetas seleccionadas",
+        "remove-label": "Quitar las etiquetas seleccionadas",
+        "operation-help": "Al añadir se conservan las demás etiquetas. Al quitar, solo se eliminan las seleccionadas abajo.",
+        "tags-label": "Etiquetas",
+        "tags-help": "Elige etiquetas existentes o escribe una nueva para crearla al añadir.",
+        "apply": "Aplicar",
+        "saving": "Guardando…",
+        "cancel": "{{common.cancel}}",
+        "close": "{{common.close}}",
+        "saved": "Etiquetas actualizadas en {{count}} series."
     },
     "view-annotations-drawer": {
         "close": "{{common.close}}",

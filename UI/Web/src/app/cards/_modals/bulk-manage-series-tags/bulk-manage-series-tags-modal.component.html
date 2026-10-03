@@ -1,0 +1,44 @@
+<ng-container *transloco="let t; prefix: 'bulk-manage-series-tags'">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h4 class="modal-title">{{t('title')}}</h4>
+      <button type="button" class="btn-close" [attr.aria-label]="t('close')" (click)="close()"></button>
+    </div>
+
+    <div class="modal-body">
+      <p>{{t('description', {count: seriesIds().length})}}</p>
+
+      <fieldset class="mb-3">
+        <legend class="form-label fs-6">{{t('operation-label')}}</legend>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" id="add-series-tags" name="series-tag-operation"
+                 [checked]="operation() === 'add'" (change)="operation.set('add')">
+          <label class="form-check-label" for="add-series-tags">{{t('add-label')}}</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" id="remove-series-tags" name="series-tag-operation"
+                 [checked]="operation() === 'remove'" (change)="operation.set('remove')">
+          <label class="form-check-label" for="remove-series-tags">{{t('remove-label')}}</label>
+        </div>
+        <div class="form-text">{{t('operation-help')}}</div>
+      </fieldset>
+
+      <label for="bulk-series-tags" class="form-label">{{t('tags-label')}}</label>
+      <app-typeahead [config]="tagsTypeaheadSettings()" (selectedData)="updateTags($event)">
+        <ng-template #badgeItem let-item>{{item.title}}</ng-template>
+        <ng-template #optionItem let-item>{{item.title}}</ng-template>
+      </app-typeahead>
+      <div class="form-text mt-2">{{t('tags-help')}}</div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="close()">{{t('cancel')}}</button>
+      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
+        @if (isSaving()) {
+          <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+        }
+        {{isSaving() ? t('saving') : t('apply')}}
+      </button>
+    </div>
+  </div>
+</ng-container>

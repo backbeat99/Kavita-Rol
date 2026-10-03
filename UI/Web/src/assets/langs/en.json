@@ -2616,6 +2616,21 @@
         "warning-duplicate": "Your selection contains overlapping devices, this is not allowed",
         "hidden": "{{amount}} profile(s) hidden due to invalid state"
     },
+    "bulk-manage-series-tags": {
+        "title": "Manage series tags",
+        "description": "Choose how to update tags on the {{count}} selected series.",
+        "operation-label": "Action",
+        "add-label": "Add selected tags",
+        "remove-label": "Remove selected tags",
+        "operation-help": "Adding keeps all other tags. Removing only removes the tags selected below.",
+        "tags-label": "Tags",
+        "tags-help": "Select existing tags or enter a new name to create it when adding.",
+        "apply": "Apply",
+        "saving": "Saving…",
+        "cancel": "{{common.cancel}}",
+        "close": "{{common.close}}",
+        "saved": "Updated tags on {{count}} series."
+    },
 
     "entity-title": {
         "special": "Special",
@@ -4886,6 +4901,8 @@
         "add-to-reading-list-tooltip": "Add to a Reading List",
         "add-to-collection": "Add to Collection",
         "add-to-collection-tooltip": "Add series to a collection",
+        "manage-series-tags": "Manage tags",
+        "manage-series-tags-tooltip": "Add or remove tags on one or more series",
         "send-to": "Send To",
         "delete": "Delete",
         "delete-tooltip": "There is no way to revert this decision",

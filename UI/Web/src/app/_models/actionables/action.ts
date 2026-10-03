@@ -126,4 +126,5 @@ export enum Action {
   Navigate = 38,
   AddToDashboard = 39,
   AddToSideNav = 40,
+  ManageSeriesTags = 41,
 }

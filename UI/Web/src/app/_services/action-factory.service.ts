@@ -569,6 +569,17 @@ export class ActionFactoryService {
         ],
       },
       {
+        action: Action.ManageSeriesTags,
+        title: 'manage-series-tags',
+        description: 'manage-series-tags-tooltip',
+
+        callback: this.dummyCallback,
+        shouldRender: this.dummyShouldRender,
+
+        requiredRoles: [Role.Admin],
+        children: [],
+      },
+      {
         action: Action.Submenu,
         title: 'send-to',
         description: 'send-to-tooltip',

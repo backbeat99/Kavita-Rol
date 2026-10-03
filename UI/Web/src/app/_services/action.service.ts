@@ -32,6 +32,9 @@ import {MatchSeriesModalComponent} from "../_single-module/match-series-modal/ma
 import {
   BulkSetReadingProfileModalComponent
 } from "../cards/_modals/bulk-set-reading-profile-modal/bulk-set-reading-profile-modal.component";
+import {
+  BulkManageSeriesTagsModalComponent
+} from "../cards/_modals/bulk-manage-series-tags/bulk-manage-series-tags-modal.component";
 import {EditSeriesModalComponent} from "../cards/_modals/edit-series-modal/edit-series-modal.component";
 import {EditVolumeModalComponent} from "../_single-module/edit-volume-modal/edit-volume-modal.component";
 import {DownloadService} from '../shared/_services/download.service';
@@ -106,6 +109,7 @@ export class ActionService {
 
   private readingListModalRef: TypedModalRef<BulkSetReadingProfileModalComponent> |  TypedModalRef<ListSelectModalComponent<ReadingList>> | null = null;
   private collectionModalRef: TypedModalRef<ListSelectModalComponent<UserCollection>> | null = null;
+  private bulkManageSeriesTagsModalRef: TypedModalRef<BulkManageSeriesTagsModalComponent> | null = null;
 
 
 
@@ -220,6 +224,11 @@ export class ActionService {
           switchMap(() => this.seriesService.delete(series.id)),
           tap(() => this.toastr.success(translate('toasts.series-deleted'))),
           map(() => this.fromAction(action, series, 'remove'))
+        );
+
+      case Action.ManageSeriesTags:
+        return this.manageSeriesTags([series]).pipe(
+          map(() => this.fromAction(action, series, 'reload'))
         );
 
       case Action.Edit: {
@@ -1045,6 +1054,11 @@ export class ActionService {
         });
       }
 
+      case Action.ManageSeriesTags:
+        return this.manageSeriesTags(series).pipe(
+          map(() => this.fromAction(action, series, 'reload'))
+        );
+
       case Action.AddToWantToReadList:
         return this.memberService.addSeriesToWantToRead(series.map(s => s.id)).pipe(
           tap(() => this.toastr.success(translate('toasts.series-added-want-to-read'))),
@@ -1575,6 +1589,26 @@ export class ActionService {
       if (callback) {
         callback(false);
       }
+    });
+  }
+
+  private manageSeriesTags(series: Series[]): Observable<boolean> {
+    if (this.bulkManageSeriesTagsModalRef != null) return EMPTY;
+
+    const modalRef = this.modalService.open(BulkManageSeriesTagsModalComponent, addToModal());
+    this.bulkManageSeriesTagsModalRef = modalRef;
+    modalRef.setInput('seriesIds', series.map(s => s.id));
+
+    return new Observable<boolean>(subscriber => {
+      modalRef.closed.subscribe(() => {
+        this.bulkManageSeriesTagsModalRef = null;
+        subscriber.next(true);
+        subscriber.complete();
+      });
+      modalRef.dismissed.subscribe(() => {
+        this.bulkManageSeriesTagsModalRef = null;
+        subscriber.complete();
+      });
     });
   }
 
