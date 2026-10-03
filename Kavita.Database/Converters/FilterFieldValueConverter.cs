@@ -28,7 +28,7 @@ public static class SeriesFilterFieldValueConverter
                 .Select(x => (AgeRating) Enum.Parse(typeof(AgeRating), x))
                 .ToList(),
             SeriesFilterField.UserRating => string.IsNullOrEmpty(value) ? 0 : float.Parse(value),
-            SeriesFilterField.Tags => value.Split(',')
+            SeriesFilterField.Tags or SeriesFilterField.ItemTags => value.Split(',')
                 .Where(s => !string.IsNullOrEmpty(s))
                 .Select(int.Parse)
                 .ToList(),

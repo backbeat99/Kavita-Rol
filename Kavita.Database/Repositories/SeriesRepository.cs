@@ -361,10 +361,21 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
                 .ProjectTo<TagDto>(mapper.ConfigurationProvider)
                 .ToListAsync(ct);
 
+        var itemTagsTask = dto.HasShortcode
+            ? Task.FromResult(new List<TagDto>())
+            : context.Tag
+                .Where(t => context.Chapter
+                                .Any(c => seriesIdsSubquery.Contains(c.Volume.SeriesId) &&
+                                          c.Tags.Any(itemTag => itemTag.Id == t.Id)) &&
+                            EF.Functions.Like(t.NormalizedTitle, $"%{searchQueryNormalized}%"))
+                .Take(maxRecords)
+                .ProjectTo<TagDto>(mapper.ConfigurationProvider)
+                .ToListAsync(ct);
+
         // Run separate DB queries in parallel
         await Task.WhenAll(
             librariesTask, annotationsTask, seriesTask, readingListsTask,
-            collectionsTask, bookmarksTask, personsTask, genresTask, tagsTask);
+            collectionsTask, bookmarksTask, personsTask, genresTask, tagsTask, itemTagsTask);
 
         var result = new SearchResultGroupDto
         {
@@ -377,6 +388,7 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
             Persons = await personsTask,
             Genres = await genresTask,
             Tags = await tagsTask,
+            ItemTags = await itemTagsTask,
             Files = [],
             Chapters = []
         };
@@ -968,6 +980,7 @@ public class SeriesRepository(DataContext context, IMapper mapper) : ISeriesRepo
             SeriesFilterField.AgeRating => query.HasAgeRating(true, statement.Comparison, (IList<AgeRating>) value),
             SeriesFilterField.UserRating => query.HasRating(true, statement.Comparison, (float) value , userId),
             SeriesFilterField.Tags => query.HasTags(true, statement.Comparison, (IList<int>) value),
+            SeriesFilterField.ItemTags => query.HasItemTags(true, statement.Comparison, (IList<int>) value),
             SeriesFilterField.Translators => query.HasPeople(true, statement.Comparison, (IList<int>) value, PersonRole.Translator),
             SeriesFilterField.Characters => query.HasPeople(true, statement.Comparison, (IList<int>) value, PersonRole.Character),
             SeriesFilterField.Publisher => query.HasPeople(true, statement.Comparison, (IList<int>) value, PersonRole.Publisher),

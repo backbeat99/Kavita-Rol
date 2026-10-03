@@ -70,7 +70,7 @@ interface FormModel {
  */
 const GROUP_ORDER = [
   'series', 'collections', 'readingLists', 'bookmarks', 'libraries',
-  'persons', 'genres', 'tags', 'chapters', 'files', 'annotations'
+  'persons', 'genres', 'tags', 'itemTags', 'chapters', 'files', 'annotations'
 ] as const;
 
 type GroupKey = typeof GROUP_ORDER[number];
@@ -162,7 +162,7 @@ export class SearchTypeaheadComponent {
 
     return data.series.length > 0 || data.collections.length > 0 || data.readingLists.length > 0
       || data.bookmarks.length > 0 || data.libraries.length > 0 || data.genres.length > 0
-      || data.tags.length > 0 || data.persons.length > 0 || data.chapters.length > 0
+      || data.tags.length > 0 || data.itemTags.length > 0 || data.persons.length > 0 || data.chapters.length > 0
       || data.files.length > 0 || data.annotations.length > 0;
   });
 
@@ -400,6 +400,7 @@ export class SearchTypeaheadComponent {
       case 'libraries': this.clickLibraryResult(row.item as Library); break;
       case 'genres': this.goToOther(SeriesFilterField.Genres, (row.item as Genre).id + ''); break;
       case 'tags': this.goToOther(SeriesFilterField.Tags, (row.item as Tag).id + ''); break;
+      case 'itemTags': this.goToOther(SeriesFilterField.ItemTags, (row.item as Tag).id + ''); break;
       case 'persons': this.goToPerson(row.item as Person); break;
       case 'chapters': this.clickChapterSearchResult(row.item as Chapter); break;
       case 'files': this.clickFileSearchResult(row.item as MangaFile); break;

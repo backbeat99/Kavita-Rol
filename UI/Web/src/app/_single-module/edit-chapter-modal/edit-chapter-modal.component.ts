@@ -143,6 +143,7 @@ export class EditChapterModalComponent implements OnInit {
   libraryType = input.required<LibraryType>();
   libraryId = input.required<number>();
   seriesId = input.required<number>();
+  initialTab = input<Tabs>(Tabs.General);
 
   protected readonly activeId = signal(Tabs.General);
   private selectedCover = '';
@@ -214,6 +215,8 @@ export class EditChapterModalComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (this.accountService.hasAdminRole()) this.activeId.set(this.initialTab());
+
     // Seeded once. A linkedSignal here would wipe in-progress edits whenever chapter() changes
     this.formModel.set({
       titleName: this.chapter().titleName,

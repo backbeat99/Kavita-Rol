@@ -147,12 +147,24 @@
               }
 
               @if (data.tags.length > 0) {
-                <li class="list-group-item no-hover group-header" role="presentation"><h5 class="kv-section-header" [id]="groupId('tags')">{{t('tags')}}</h5></li>
+                <li class="list-group-item no-hover group-header" role="presentation"><h5 class="kv-section-header" [id]="groupId('tags')">{{t('series-tags')}}</h5></li>
                 <ul class="list-group results" role="group" [attr.aria-labelledby]="groupId('tags')">
                   @for (option of data.tags; track option; let i = $index) {
                     <li #optionRow class="list-group-item" role="option" [id]="rowId(offset.tags + i)"
                         [class.active]="focusedIndex() === offset.tags + i" [attr.aria-selected]="focusedIndex() === offset.tags + i">
                       <ng-container [ngTemplateOutlet]="tagTemplate" [ngTemplateOutletContext]="{ $implicit: option }" />
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if (data.itemTags.length > 0) {
+                <li class="list-group-item no-hover group-header" role="presentation"><h5 class="kv-section-header" [id]="groupId('itemTags')">{{t('item-tags')}}</h5></li>
+                <ul class="list-group results" role="group" [attr.aria-labelledby]="groupId('itemTags')">
+                  @for (option of data.itemTags; track option; let i = $index) {
+                    <li #optionRow class="list-group-item" role="option" [id]="rowId(offset.itemTags + i)"
+                        [class.active]="focusedIndex() === offset.itemTags + i" [attr.aria-selected]="focusedIndex() === offset.itemTags + i">
+                      <ng-container [ngTemplateOutlet]="itemTagTemplate" [ngTemplateOutletContext]="{ $implicit: option }" />
                     </li>
                   }
                 </ul>
@@ -331,6 +343,17 @@
 
   <ng-template #tagTemplate let-item>
     <div class="result-row clickable d-flex align-items-center gap-2" (click)="goToOther(FilterField.Tags, item.id)">
+      <div class="body">
+        <div class="title text-truncate">
+          <i class="fas fa-tag" aria-hidden="true"></i>
+          {{item.title}}
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #itemTagTemplate let-item>
+    <div class="result-row clickable d-flex align-items-center gap-2" (click)="goToOther(FilterField.ItemTags, item.id)">
       <div class="body">
         <div class="title text-truncate">
           <i class="fas fa-tag" aria-hidden="true"></i>

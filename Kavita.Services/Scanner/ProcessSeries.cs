@@ -510,7 +510,7 @@ public class ProcessSeries(
             PersonHelper.UpdateSeriesMetadataPeople(databasePeople, series.Metadata, chapterPeople, personRole);
         }
 
-        if (!series.Metadata.TagsLocked)
+        if (ShouldInheritChapterTags(library.Type, series.Metadata.TagsLocked))
         {
             var tags = chapters.SelectMany(c => c.Tags).ToList();
             UpdateSeriesMetadataTags(series.Metadata.Tags, tags);
@@ -615,6 +615,11 @@ public class ProcessSeries(
         logger.LogTrace("[TIME] Kavita took {Time} ms to process collections on Series: {Name}", sw.ElapsedMilliseconds, series.Name);
     }
 
+
+    internal static bool ShouldInheritChapterTags(LibraryType libraryType, bool tagsLocked)
+    {
+        return libraryType != LibraryType.Rpg && !tagsLocked;
+    }
 
     public static void UpdateSeriesMetadataTags(ICollection<Tag> metadataTags, IList<Tag> chapterTags)
     {

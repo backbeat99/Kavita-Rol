@@ -4,10 +4,13 @@ using System.Threading.Tasks;
 using Kavita.API.Database;
 using Kavita.Common.Extensions;
 using Kavita.Models.Builders;
+using Kavita.Models.DTOs.Search;
 using Kavita.Models.Entities;
 using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.Metadata;
+using Kavita.Models.Entities.User;
 using Kavita.Models.Parser;
+using Kavita.Services.Builders;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -93,6 +96,32 @@ public class SeriesRepositoryTests(ITestOutputHelper testOutputHelper) : Abstrac
             2, MangaFormat.Archive, series.NormalizedName, series.Id);
 
         Assert.True(isUnique);
+    }
+
+    [Fact]
+    public async Task SearchSeriesAsync_SeparatesGameAndMaterialTags()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var gameTag = new TagBuilder("Scoped Game Tag").Build();
+        var materialTag = new TagBuilder("Scoped Material Tag").Build();
+        var library = new LibraryBuilder("RPG Search", LibraryType.Rpg)
+            .WithSeries(new SeriesBuilder("Searchable Game")
+                .WithMetadata(new SeriesMetadataBuilder().WithTags([gameTag]).Build())
+                .WithVolume(new VolumeBuilder("1")
+                    .WithChapter(new ChapterBuilder("1").WithTags([materialTag]).Build())
+                    .Build())
+                .Build())
+            .Build();
+        var user = new AppUserBuilder("search-user", "search@example.com").Build();
+        user.Libraries.Add(library);
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        var result = await unitOfWork.SeriesRepository.SearchSeriesAsync(
+            user.Id, false, [library.Id], SearchDto.FromQuery("Scoped", false));
+
+        Assert.Equal([gameTag.Id], result.Tags.Select(t => t.Id));
+        Assert.Equal([materialTag.Id], result.ItemTags.Select(t => t.Id));
     }
 
     // TODO: GetSeriesDtoForLibraryIdV2Async Tests (On Deck)

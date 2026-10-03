@@ -368,6 +368,7 @@ export class MetadataService {
           return {value: lib.id, label: lib.name}
         })));
       case SeriesFilterField.Tags:
+      case SeriesFilterField.ItemTags:
         return this.getAllTags().pipe(map(statuses => statuses.map(status => {
           return {value: status.id, label: status.title}
         })));

@@ -151,6 +151,19 @@ public class TagRepositoryTests(ITestOutputHelper outputHelper): AbstractDbTest(
     }
 
     [Fact]
+    public async Task GetAllTagDtosForLibrariesAsync_IncludesAccessibleChapterOnlyTags()
+    {
+        var (unitOfWork, context, _) = await CreateDatabase();
+        var tags = CreateTestTags();
+        var (_, restrictedAccess, _) = await SeedDbWithTags(context, tags);
+
+        var results = await unitOfWork.TagRepository.GetAllTagDtosForLibrariesAsync(restrictedAccess.Id);
+
+        Assert.Contains(results, tag => tag.Id == tags.Lib1ChaptersTag.Id);
+        Assert.DoesNotContain(results, tag => tag.Id == tags.Lib0ChaptersTag.Id);
+    }
+
+    [Fact]
     public async Task GetBrowseableTag_FullAccess_ReturnsAllTagsWithCorrectCounts()
     {
         var (unitOfWork, context, _) = await CreateDatabase();

@@ -135,6 +135,8 @@ export class GenericFilterFieldPipe implements PipeTransform {
         return translate('filter-field-pipe.summary');
       case SeriesFilterField.Tags:
         return translate('filter-field-pipe.tags');
+      case SeriesFilterField.ItemTags:
+        return translate('filter-field-pipe.item-tags');
       case SeriesFilterField.Translators:
         return translate('filter-field-pipe.translators');
       case SeriesFilterField.UserRating:

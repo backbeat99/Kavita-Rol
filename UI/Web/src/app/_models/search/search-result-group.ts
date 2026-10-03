@@ -18,6 +18,7 @@ export class SearchResultGroup {
   persons: Array<Person> = [];
   genres: Array<Genre> = [];
   tags: Array<Tag> = [];
+  itemTags: Array<Tag> = [];
   files: Array<MangaFile> = [];
   chapters: Array<Chapter> = [];
   bookmarks: Array<BookmarkSearchResult> = [];
@@ -31,6 +32,7 @@ export class SearchResultGroup {
       this.persons = [];
       this.genres = [];
       this.tags = [];
+      this.itemTags = [];
       this.files = [];
       this.chapters = [];
       this.bookmarks = [];

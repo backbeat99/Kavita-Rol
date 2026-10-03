@@ -92,6 +92,7 @@ export class DetailsTabComponent {
   entity = input<Series | Volume | Chapter>();
   genres = input<Genre[]>([]);
   tags = input<BaseTag[]>([]);
+  tagFilterField = input<SeriesFilterField>(SeriesFilterField.Tags);
   webLinks = input<string[]>([]);
   suppressEmptyGenres = input<boolean>(false);
   suppressEmptyTags = input<boolean>(false);

@@ -253,7 +253,7 @@ export class FilterUtilitiesService {
           SeriesFilterField.Colorist, SeriesFilterField.Inker, SeriesFilterField.Penciller,
           SeriesFilterField.Writers, SeriesFilterField.Genres, SeriesFilterField.Libraries,
           SeriesFilterField.Formats, SeriesFilterField.CollectionTags, SeriesFilterField.Tags,
-          SeriesFilterField.Imprint, SeriesFilterField.Team, SeriesFilterField.Location
+          SeriesFilterField.ItemTags, SeriesFilterField.Imprint, SeriesFilterField.Team, SeriesFilterField.Location
         ] as unknown as T[];
       case 'person':
         return [
@@ -414,8 +414,8 @@ export class FilterUtilitiesService {
       case 'series':
         return [
           SeriesFilterField.Summary, SeriesFilterField.UserRating, SeriesFilterField.Genres,
-          SeriesFilterField.CollectionTags, SeriesFilterField.Tags, SeriesFilterField.ReleaseYear,
-          SeriesFilterField.Translators, SeriesFilterField.Characters, SeriesFilterField.Publisher,
+          SeriesFilterField.CollectionTags, SeriesFilterField.Tags, SeriesFilterField.ItemTags,
+          SeriesFilterField.ReleaseYear, SeriesFilterField.Translators, SeriesFilterField.Characters, SeriesFilterField.Publisher,
           SeriesFilterField.Editor, SeriesFilterField.CoverArtist, SeriesFilterField.Letterer,
           SeriesFilterField.Colorist, SeriesFilterField.Inker, SeriesFilterField.Penciller,
           SeriesFilterField.Writers, SeriesFilterField.Imprint, SeriesFilterField.Team,

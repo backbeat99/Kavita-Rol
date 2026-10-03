@@ -12,11 +12,16 @@ import {Library} from '../_models/library/library';
 import {DriveThruRpgMatchStatus, RpgGeekMatchStatus, RpgMaterialType} from '../_models/rpg/rpg-catalog';
 import {Series} from '../_models/series';
 import {Volume} from '../_models/volume';
+import {SeriesMetadata} from '../_models/metadata/series-metadata';
+import {FilterUtilitiesService} from '../shared/_services/filter-utilities.service';
+import {SeriesFilterField} from '../_models/metadata/v2/series-filter-field';
+import {FilterComparison} from '../_models/metadata/v2/filter-comparison';
+import {TagBadgeComponent, TagBadgeCursor} from '../shared/tag-badge/tag-badge.component';
 
 @Component({
   selector: 'app-rpg-game-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslocoDirective],
+  imports: [CommonModule, RouterLink, TranslocoDirective, TagBadgeComponent],
   templateUrl: './rpg-game-detail.component.html',
   styleUrl: './rpg-game-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -28,15 +33,19 @@ export class RpgGameDetailComponent implements OnInit, OnDestroy {
   private readonly readerService = inject(ReaderService);
   private readonly seriesService = inject(SeriesService);
   private readonly toastr = inject(ToastrService);
+  private readonly filterUtilityService = inject(FilterUtilitiesService);
 
   readonly library = input.required<Library>();
   readonly series = input.required<Series>();
   readonly volumes = input.required<Volume[]>();
+  readonly metadata = input<SeriesMetadata | null>(null);
   readonly coverImage = input<string>();
   readonly chooseCover = output<void>();
+  readonly editTags = output<void>();
   readonly isAdmin = this.accountService.hasAdminRole;
   readonly isScanning = signal(false);
   readonly RpgMaterialType = RpgMaterialType;
+  readonly TagBadgeCursor = TagBadgeCursor;
 
   readonly publications = computed(() => this.volumes()
     .filter(volume => volume.rpgMaterialType >= RpgMaterialType.CoreManual && volume.rpgMaterialType <= RpgMaterialType.OtherPublication)
@@ -96,6 +105,12 @@ export class RpgGameDetailComponent implements OnInit, OnDestroy {
       .map(fileName => fileName.includes('.') ? fileName.split('.').pop()!.toUpperCase() : '')
       .filter(Boolean));
     return Array.from(formats).join(' · ');
+  }
+
+  openGameTag(tagId: number): void {
+    this.filterUtilityService.applyFilter(
+      ['all-series'], SeriesFilterField.Tags, FilterComparison.Equal, `${tagId}`
+    ).subscribe();
   }
 
   read(volume: Volume): void {

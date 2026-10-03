@@ -101,6 +101,7 @@ import {EntityTitleService} from "../_services/entity-title.service";
 import {DriveThruRpgMatchStatus, DriveThruRpgSearchResult, RpgMaterialType} from "../_models/rpg/rpg-catalog";
 import {RpgBibliographyUpdate, UpdateVolumeRequest} from "../_models/update-volume-request";
 import {ToastrService} from '@openng/ngx-toastr';
+import {TagBadgeComponent, TagBadgeCursor} from '../shared/tag-badge/tag-badge.component';
 
 interface VolumeCast extends IHasCast {
   characterLocked: boolean;
@@ -169,7 +170,8 @@ interface VolumeCast extends IHasCast {
     ReadingProgressIconPipePipe,
     ChapterCardComponent,
     TabTitlePipe,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    TagBadgeComponent
   ],
   templateUrl: './volume-detail.component.html',
   styleUrl: './volume-detail.component.scss',
@@ -808,13 +810,24 @@ export class VolumeDetailComponent implements OnInit {
   }
 
   editRpgVersionLanguage(chapter: Chapter): void {
-    if (!this.isRpgPublication() || !this.accountService.hasAdminRole()) return;
+    if (!this.isRpgPublication()) return;
+    this.openRpgChapterEditor(chapter, Tabs.General);
+  }
+
+  editRpgItemTags(chapter: Chapter): void {
+    if (!this.isRpgLibrary()) return;
+    this.openRpgChapterEditor(chapter, Tabs.Tags);
+  }
+
+  private openRpgChapterEditor(chapter: Chapter, initialTab: Tabs): void {
+    if (!this.accountService.hasAdminRole()) return;
 
     const ref = this.modalService.open(EditChapterModalComponent, editModal());
     ref.setInput('chapter', chapter);
     ref.setInput('libraryType', this.libraryType());
     ref.setInput('libraryId', this.libraryId());
     ref.setInput('seriesId', this.seriesId());
+    ref.setInput('initialTab', initialTab);
     ref.closed.pipe(
       filter((res: ModalResult<Chapter>) => res.success),
       takeUntilDestroyed(this.destroyRef)
@@ -869,6 +882,12 @@ export class VolumeDetailComponent implements OnInit {
     this.filterUtilityService.applyFilter(['all-series'], field, FilterComparison.Equal, `${value}`).subscribe();
   }
 
+  openRpgItemTag(event: Event, tagId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.openFilter(SeriesFilterField.ItemTags, tagId);
+  }
+
 
   switchTabsToDetail() {
     this.activeTabId = Tabs.Details;
@@ -901,5 +920,6 @@ export class VolumeDetailComponent implements OnInit {
   protected readonly AgeRating = AgeRating;
   protected readonly Tabs = Tabs;
   protected readonly FilterField = SeriesFilterField;
+  protected readonly TagBadgeCursor = TagBadgeCursor;
   protected readonly encodeURIComponent = encodeURIComponent;
 }

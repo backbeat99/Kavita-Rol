@@ -434,6 +434,33 @@ public static class SeriesFilter
             }
         }
 
+        public IQueryable<Series> HasItemTags(bool condition, FilterComparison comparison, IList<int> tags)
+        {
+            if (!condition || (comparison != FilterComparison.IsEmpty && comparison != FilterComparison.IsNotEmpty && tags.Count == 0)) return queryable;
+            ComparisonProfile.Validate(comparison, ComparisonProfile.ListWithEmpty, "Series.ItemTags");
+
+            switch (comparison)
+            {
+                case FilterComparison.Equal:
+                case FilterComparison.Contains:
+                    return queryable.Where(s => s.Volumes.Any(v => v.Chapters.Any(c => c.Tags.Any(t => tags.Contains(t.Id)))));
+                case FilterComparison.NotEqual:
+                case FilterComparison.NotContains:
+                    return queryable.Where(s => s.Volumes.All(v => v.Chapters.All(c => c.Tags.All(t => !tags.Contains(t.Id)))));
+                case FilterComparison.MustContains:
+                    var queries = new List<IQueryable<Series>> { queryable };
+                    queries.AddRange(tags.Select(tagId => queryable.Where(s =>
+                        s.Volumes.Any(v => v.Chapters.Any(c => c.Tags.Any(t => t.Id == tagId))))));
+                    return queries.Aggregate((q1, q2) => q1.Intersect(q2));
+                case FilterComparison.IsEmpty:
+                    return queryable.Where(s => s.Volumes.All(v => v.Chapters.All(c => c.Tags.Count == 0)));
+                case FilterComparison.IsNotEmpty:
+                    return queryable.Where(s => s.Volumes.Any(v => v.Chapters.Any(c => c.Tags.Count > 0)));
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(comparison), comparison, null);
+            }
+        }
+
         public IQueryable<Series> HasPeople(bool condition, FilterComparison comparison, IList<int> people, PersonRole role)
         {
             if (!condition || (comparison != FilterComparison.IsEmpty && comparison != FilterComparison.IsNotEmpty && people.Count == 0)) return queryable;

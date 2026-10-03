@@ -113,7 +113,7 @@
         <div class="pill-row">
           @if (tags().length > 0) {
             @for (item of tags(); track item.id) {
-              <a href="javascript:void(0)" (click)="openGeneric(FilterField.Tags, item.id)">
+              <a href="javascript:void(0)" (click)="openGeneric(tagFilterField(), item.id)">
                 <app-tag-badge shape="pill" [selectionMode]="TagBadgeCursor.Clickable">{{item.title}}</app-tag-badge>
               </a>
             }

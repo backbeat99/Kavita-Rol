@@ -11,6 +11,7 @@ using Kavita.Models.Builders;
 using Kavita.Models.DTOs;
 using Kavita.Models.DTOs.Filtering.v2;
 using Kavita.Models.DTOs.Progress;
+using Kavita.Models.Entities;
 using Kavita.Models.Entities.Enums;
 using Kavita.Models.Entities.User;
 using Kavita.Services.Builders;
@@ -1112,7 +1113,89 @@ public class SeriesFilterTests(ITestOutputHelper outputHelper): AbstractDbTest(o
 
     #region HasTags
 
+    private static async Task<(Tag GameTag, Tag MaterialTag)> SetupTagScopes(DataContext context)
+    {
+        var gameTag = new TagBuilder("Game Tag").Build();
+        var materialTag = new TagBuilder("Material Tag").Build();
+        var library = new LibraryBuilder("RPG", LibraryType.Rpg)
+            .WithSeries(new SeriesBuilder("Game tagged")
+                .WithMetadata(new SeriesMetadataBuilder().WithTag(gameTag).Build())
+                .WithVolume(new VolumeBuilder("1")
+                    .WithChapter(new ChapterBuilder("1").Build())
+                    .Build())
+                .Build())
+            .WithSeries(new SeriesBuilder("Material tagged")
+                .WithVolume(new VolumeBuilder("1")
+                    .WithChapter(new ChapterBuilder("1").WithTags([materialTag]).Build())
+                    .Build())
+                .Build())
+            .WithSeries(new SeriesBuilder("Untagged")
+                .WithVolume(new VolumeBuilder("1")
+                    .WithChapter(new ChapterBuilder("1").Build())
+                    .Build())
+                .Build())
+            .Build();
 
+        context.Library.Add(library);
+        await context.SaveChangesAsync();
+        return (gameTag, materialTag);
+    }
+
+    [Fact]
+    public async Task HasTags_DoesNotMatchMaterialTags()
+    {
+        var (_, context, _) = await CreateDatabase();
+        var (gameTag, materialTag) = await SetupTagScopes(context);
+
+        var gameResults = await context.Series
+            .HasTags(true, FilterComparison.Contains, [gameTag.Id])
+            .Select(series => series.Name)
+            .ToListAsync();
+        var materialResults = await context.Series
+            .HasTags(true, FilterComparison.Contains, [materialTag.Id])
+            .ToListAsync();
+
+        Assert.Equal(["Game tagged"], gameResults);
+        Assert.Empty(materialResults);
+    }
+
+    [Fact]
+    public async Task HasItemTags_MatchesOnlyMaterialTags()
+    {
+        var (_, context, _) = await CreateDatabase();
+        var (gameTag, materialTag) = await SetupTagScopes(context);
+
+        var materialResults = await context.Series
+            .HasItemTags(true, FilterComparison.Contains, [materialTag.Id])
+            .Select(series => series.Name)
+            .ToListAsync();
+        var gameResults = await context.Series
+            .HasItemTags(true, FilterComparison.Contains, [gameTag.Id])
+            .ToListAsync();
+
+        Assert.Equal(["Material tagged"], materialResults);
+        Assert.Empty(gameResults);
+    }
+
+    [Fact]
+    public async Task HasItemTags_EmptyAndNotEmptyRespectMaterialScope()
+    {
+        var (_, context, _) = await CreateDatabase();
+        await SetupTagScopes(context);
+
+        var empty = await context.Series
+            .HasItemTags(true, FilterComparison.IsEmpty, [])
+            .Select(series => series.Name)
+            .OrderBy(name => name)
+            .ToListAsync();
+        var notEmpty = await context.Series
+            .HasItemTags(true, FilterComparison.IsNotEmpty, [])
+            .Select(series => series.Name)
+            .ToListAsync();
+
+        Assert.Equal(["Game tagged", "Untagged"], empty);
+        Assert.Equal(["Material tagged"], notEmpty);
+    }
 
     #endregion
 

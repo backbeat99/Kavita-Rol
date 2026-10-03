@@ -1,1 +1,16 @@
 @use '../../../tag-card-common';
+
+.tag-card { cursor: default; }
+.tag-meta { gap: .75rem; }
+.tag-meta button {
+  min-height: 44px;
+  padding: .35rem 0;
+  border: 0;
+  color: inherit;
+  text-align: start;
+  background: transparent;
+}
+.tag-meta button:last-child { text-align: end; }
+.tag-meta button:not(:disabled) { cursor: pointer; text-decoration: underline; text-underline-offset: .2rem; }
+.tag-meta button:disabled { opacity: .55; }
+.tag-meta button:focus-visible { outline: 2px solid var(--primary-color, #55c991); outline-offset: 2px; }

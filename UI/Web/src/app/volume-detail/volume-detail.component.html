@@ -315,10 +315,22 @@
                       <button class="btn btn-outline-secondary rpg-version-edit-language" type="button" (click)="editRpgVersionLanguage(chapter)">
                         {{t('edit-version-language')}}
                       </button>
+                      <button class="btn btn-outline-secondary" type="button" (click)="editRpgItemTags(chapter)">
+                        {{chapter.tags.length > 0 ? t('edit-item-tags') : t('add-item-tags')}}
+                      </button>
                     }
                     @if (canManagePublicationVersions() && volume().chapters.length > 1) {
                       <button class="btn btn-outline-secondary rpg-version-split" type="button" [disabled]="splitVersionSaving()" (click)="beginSplitRpgVersion(chapter)">
                         {{t('split-version')}}
+                      </button>
+                    }
+                  </div>
+                }
+                @if (chapter.tags.length > 0) {
+                  <div class="rpg-item-tags" [attr.aria-label]="t('version-tags')">
+                    @for (tag of chapter.tags; track tag.id) {
+                      <button type="button" (click)="openRpgItemTag($event, tag.id)" [attr.aria-label]="t('filter-item-tag', {tag: tag.title})">
+                        <app-tag-badge shape="pill" size="sm" [selectionMode]="TagBadgeCursor.Clickable">{{tag.title}}</app-tag-badge>
                       </button>
                     }
                   </div>
@@ -341,13 +353,33 @@
             }
           </section>
         }
-        @if (isRpgResource()) {
+        @if (isRpgLibrary() && !isRpgPublication()) {
           <section class="rpg-resource-files">
-            <h2>{{t('resource-file-heading')}}</h2>
+            <h2>{{isRpgResource() ? t('resource-file-heading') : t('material-file-heading')}}</h2>
             @for (chapter of volume().chapters; track chapter.id) {
-              @for (file of chapter.files; track file.id) {
-                <div class="resource-file"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>{{rpgFileName(file.filePath)}}</span><small>{{rpgFileExtension(file.filePath)}}</small></div>
-              }
+              <div class="rpg-resource-entry">
+                @for (file of chapter.files; track file.id) {
+                  <div class="resource-file"><i class="fa-regular fa-file-lines" aria-hidden="true"></i><span>{{rpgFileName(file.filePath)}}</span><small>{{rpgFileExtension(file.filePath)}}</small></div>
+                }
+                @if (chapter.tags.length > 0 || accountService.hasAdminRole()) {
+                  <div class="rpg-resource-tags">
+                    @if (chapter.tags.length > 0) {
+                      <div class="rpg-item-tags" [attr.aria-label]="t('resource-tags')">
+                        @for (tag of chapter.tags; track tag.id) {
+                          <button type="button" (click)="openRpgItemTag($event, tag.id)" [attr.aria-label]="t('filter-item-tag', {tag: tag.title})">
+                            <app-tag-badge shape="pill" size="sm" [selectionMode]="TagBadgeCursor.Clickable">{{tag.title}}</app-tag-badge>
+                          </button>
+                        }
+                      </div>
+                    }
+                    @if (accountService.hasAdminRole()) {
+                      <button class="btn btn-outline-secondary" type="button" (click)="editRpgItemTags(chapter)">
+                        {{chapter.tags.length > 0 ? t('edit-item-tags') : t('add-item-tags')}}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
             }
           </section>
         }
@@ -402,7 +434,7 @@
                                     [allowToggle]="false"
                                     (toggled)="switchTabsToDetail()">
                   <ng-template #badgeExpanderItem let-item let-position="idx" let-last="last">
-                    <a href="javascript:void(0)" class="dark-exempt btn-icon" (click)="openFilter(FilterField.Tags, item.id)">{{item.title}}</a>
+                    <a href="javascript:void(0)" class="dark-exempt btn-icon" (click)="openFilter(FilterField.ItemTags, item.id)">{{item.title}}</a>
                   </ng-template>
                 </app-badge-expander>
               </div>
@@ -491,6 +523,7 @@
                                [entity]="volume()"
                                [genres]="genres()"
                                [tags]="tags()"
+                               [tagFilterField]="FilterField.ItemTags"
                                [files]="files()"
                                [basicMetadata]="volumeBasicMetadata()"
                                [individualWork]="true"

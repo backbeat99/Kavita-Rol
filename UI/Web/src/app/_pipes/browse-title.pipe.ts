@@ -21,6 +21,7 @@ export class BrowseTitlePipe implements PipeTransform {
       case SeriesFilterField.UserRating:
         return translate('browse-title-pipe.user-rating', {value});
       case SeriesFilterField.Tags:
+      case SeriesFilterField.ItemTags:
         return translate('browse-title-pipe.tag', {value});
       case SeriesFilterField.Translators:
         return translate('browse-title-pipe.translator', {value});

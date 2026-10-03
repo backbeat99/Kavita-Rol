@@ -66,6 +66,10 @@ public enum SeriesFilterField
     /// If presents in the filter overwrites <see cref="AppUserPreferences.CollapseSeriesRelationships"/>
     /// </summary>
     CollapseSeriesRelationships = 34,
+    /// <summary>
+    /// Tags assigned to individual chapters. In RPG libraries these represent version or resource tags.
+    /// </summary>
+    ItemTags = 35,
 }
 
 

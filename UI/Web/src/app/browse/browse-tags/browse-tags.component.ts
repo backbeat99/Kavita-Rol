@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, OnInit} from '@angular/core';
 import {CardDetailLayoutComponent} from "../../cards/card-detail-layout/card-detail-layout.component";
-import {DecimalPipe, NgClass} from "@angular/common";
+import {DecimalPipe} from "@angular/common";
 import {
   SideNavCompanionBarComponent
 } from "../../sidenav/_components/side-nav-companion-bar/side-nav-companion-bar.component";
@@ -24,8 +24,7 @@ import {CompactNumberPipe} from "../../_pipes/compact-number.pipe";
     DecimalPipe,
     SideNavCompanionBarComponent,
     TranslocoDirective,
-    CompactNumberPipe,
-    NgClass
+    CompactNumberPipe
   ],
   templateUrl: './browse-tags.component.html',
   styleUrl: './browse-tags.component.scss',
@@ -60,7 +59,9 @@ export class BrowseTagsComponent implements OnInit {
   }
 
   openFilter(field: SeriesFilterField, tag: BrowseTag) {
-    if (tag.seriesCount === 0) return; // We don't yet have an issue page
+    if (field === SeriesFilterField.Tags && tag.seriesCount === 0) return;
+    if (field === SeriesFilterField.ItemTags && tag.chapterCount === 0) return;
+
     this.filterUtilityService.applyFilter(['all-series'], field, FilterComparison.Equal, `${tag.id}`).subscribe();
   }
 }

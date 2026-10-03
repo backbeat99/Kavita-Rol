@@ -1,4 +1,7 @@
-﻿namespace Kavita.Services.Tests;
+﻿using Kavita.Models.Entities.Enums;
+using Kavita.Services.Scanner;
+
+namespace Kavita.Services.Tests;
 
 public class ProcessSeriesTests
 {
@@ -6,7 +9,16 @@ public class ProcessSeriesTests
 
     #region UpdateSeriesMetadata
 
-
+    [Theory]
+    [InlineData(LibraryType.Rpg, false, false)]
+    [InlineData(LibraryType.Rpg, true, false)]
+    [InlineData(LibraryType.Manga, false, true)]
+    [InlineData(LibraryType.Manga, true, false)]
+    public void ShouldInheritChapterTags_SeparatesRpgGameAndMaterialTags(
+        LibraryType libraryType, bool tagsLocked, bool expected)
+    {
+        Assert.Equal(expected, ProcessSeries.ShouldInheritChapterTags(libraryType, tagsLocked));
+    }
 
     #endregion
 

@@ -53,12 +53,18 @@ public class TagRepository(DataContext context, IMapper mapper) : ITagRepository
             userLibs = userLibs.Where(libraryIds.Contains).ToList();
         }
 
-        return await context.Series
+        var accessibleSeries = context.Series
             .Where(s => userLibs.Contains(s.LibraryId))
-            .RestrictAgainstAgeRestriction(userRating)
-            .SelectMany(s => s.Metadata.Tags)
-            .AsSplitQuery()
-            .Distinct()
+            .RestrictAgainstAgeRestriction(userRating);
+
+        var gameTags = accessibleSeries.SelectMany(s => s.Metadata.Tags);
+        var itemTags = accessibleSeries
+            .SelectMany(s => s.Volumes)
+            .SelectMany(v => v.Chapters)
+            .SelectMany(c => c.Tags);
+
+        return await gameTags
+            .Union(itemTags)
             .OrderBy(t => t.NormalizedTitle)
             .AsNoTracking()
             .ProjectTo<TagDto>(mapper.ConfigurationProvider)

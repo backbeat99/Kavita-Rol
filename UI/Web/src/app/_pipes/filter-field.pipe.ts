@@ -59,6 +59,8 @@ export class FilterFieldPipe implements PipeTransform {
         return this.translocoService.translate('filter-field-pipe.summary');
       case SeriesFilterField.Tags:
         return this.translocoService.translate('filter-field-pipe.tags');
+      case SeriesFilterField.ItemTags:
+        return this.translocoService.translate('filter-field-pipe.item-tags');
       case SeriesFilterField.Translators:
         return this.translocoService.translate('filter-field-pipe.translators');
       case SeriesFilterField.UserRating:

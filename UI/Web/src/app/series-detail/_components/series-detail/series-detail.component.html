@@ -14,8 +14,9 @@
   @let seriesCoverImageValue = seriesCoverImage();
 
   @if (libraryTypeValue === LibraryType.Rpg) {
-    <app-rpg-game-detail [library]="library()" [series]="seriesValue" [volumes]="volumes()" [coverImage]="seriesCoverImageValue"
-                         (chooseCover)="openEditSeriesModal(Tabs.CoverImage)" />
+    <app-rpg-game-detail [library]="library()" [series]="seriesValue" [volumes]="volumes()" [metadata]="seriesMetadataValue"
+                         [coverImage]="seriesCoverImageValue" (chooseCover)="openEditSeriesModal(Tabs.CoverImage)"
+                         (editTags)="openEditSeriesModal(Tabs.Metadata)" />
   } @else {
     <app-bulk-operations [marginLeft]="12" [marginRight]="0" />
     @if (seriesMetadataValue) {

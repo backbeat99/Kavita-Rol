@@ -19,11 +19,15 @@
     >
       <ng-template #cardItem let-item let-position="idx">
 
-        <div class="tag-card" [ngClass]="{'not-selectable': item.seriesCount === 0}" (click)="openFilter(FilterField.Tags, item)">
+        <div class="tag-card">
           <div class="tag-name">{{ item.title }}</div>
           <div class="tag-meta">
-            <span>{{t('series-count', {num: item.seriesCount | compactNumber})}}</span>
-            <span>{{t('issue-count', {num: item.chapterCount | compactNumber})}}</span>
+            <button type="button" [disabled]="item.seriesCount === 0" (click)="openFilter(FilterField.Tags, item)" [attr.aria-label]="t('filter-series-tag', {tag: item.title})">
+              {{t('series-count', {num: item.seriesCount | compactNumber})}}
+            </button>
+            <button type="button" [disabled]="item.chapterCount === 0" (click)="openFilter(FilterField.ItemTags, item)" [attr.aria-label]="t('filter-item-tag', {tag: item.title})">
+              {{t('issue-count', {num: item.chapterCount | compactNumber})}}
+            </button>
           </div>
         </div>
 

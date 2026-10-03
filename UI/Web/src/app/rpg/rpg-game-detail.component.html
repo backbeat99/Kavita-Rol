@@ -13,6 +13,24 @@
     }
     <div class="game-heading">
       <h1>{{series().name}}</h1>
+      @if (metadata(); as gameMetadata) {
+        @if (gameMetadata.tags.length > 0 || isAdmin()) {
+          <div class="game-tags" [attr.aria-label]="t('game-tags')">
+            @for (tag of gameMetadata.tags; track tag.id) {
+              <button class="game-tag" type="button" (click)="openGameTag(tag.id)"
+                      [attr.aria-label]="t('filter-game-tag', {tag: tag.title})">
+                <app-tag-badge shape="pill" size="sm" [selectionMode]="TagBadgeCursor.Clickable">{{tag.title}}</app-tag-badge>
+              </button>
+            }
+            @if (isAdmin()) {
+              <button class="edit-game-tags" type="button" (click)="editTags.emit()">
+                <i class="fa-solid fa-tags" aria-hidden="true"></i>
+                {{gameMetadata.tags.length > 0 ? t('edit-game-tags') : t('add-game-tags')}}
+              </button>
+            }
+          </div>
+        }
+      }
     </div>
     @if (isAdmin()) {
       <div class="game-actions">

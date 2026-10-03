@@ -18,7 +18,14 @@ public sealed record SearchResultGroupDto
     public IEnumerable<ReadingListDto> ReadingLists { get; set; } = default!;
     public IEnumerable<PersonDto> Persons { get; set; } = default!;
     public IEnumerable<GenreTagDto> Genres { get; set; } = default!;
+    /// <summary>
+    /// Tags assigned to Series metadata (Games in RPG libraries).
+    /// </summary>
     public IEnumerable<TagDto> Tags { get; set; } = default!;
+    /// <summary>
+    /// Tags assigned to Chapters (versions and Resources in RPG libraries).
+    /// </summary>
+    public IEnumerable<TagDto> ItemTags { get; set; } = default!;
     public IEnumerable<MangaFileDto> Files { get; set; } = default!;
     public IEnumerable<ChapterDto> Chapters { get; set; } = default!;
     public IEnumerable<BookmarkSearchResultDto> Bookmarks { get; set; } = default!;
